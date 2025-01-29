@@ -1,0 +1,41 @@
+{
+  "name": "my-chat-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev:client\" \"npm run dev:server\"",
+    "dev:client": "next dev",
+    "dev:server": "nodemon --watch server --exec ts-node server/src/index.ts",
+    "build": "npm run build:client && npm run build:server",
+    "build:client": "next build",
+    "build:server": "tsc -p server/tsconfig.json",
+    "start": "concurrently \"npm run start:client\" \"npm run start:server\"",
+    "start:client": "next start",
+    "start:server": "node server/dist/index.js"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.2.1",
+    "agora-rtc-sdk-ng": "^4.23.1",
+    "axios": "^1.7.9",
+    "next": "15.1.6",
+    "next-auth": "^4.24.11",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "socket.io-client": "^4.8.1"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "concurrently": "^9.1.2",
+    "eslint": "^9",
+    "eslint-config-next": "15.1.6",
+    "nodemon": "^3.1.9",
+    "postcss": "^8",
+    "prisma": "^6.2.1",
+    "tailwindcss": "^3.4.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5"
+  }
+}

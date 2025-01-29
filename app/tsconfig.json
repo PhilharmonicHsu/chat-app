@@ -1,0 +1,11 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "target": "ESNext",                // 現代瀏覽器支持的 JavaScript 標準
+    "module": "ESNext",                // 使用 ES Module
+    "moduleResolution": "node",        // 使用 Node.js 的模塊解析
+    "jsx": "preserve",                 // 支援 JSX 語法
+  },
+  "include": ["**/*"],                 // 包含所有文件
+  "exclude": ["node_modules", ".next", "server"] // 排除後端和編譯目錄
+}
