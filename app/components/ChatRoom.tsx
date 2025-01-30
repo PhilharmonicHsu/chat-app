@@ -27,6 +27,11 @@ export default function ChatRoom() {
   const decrypted = decryptData(encrypted);
 
   useEffect(() => {
+    // 確保用戶允許通知
+    if (Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+
     if (!decrypted || !decrypted.roomId || !decrypted.nickname) {
       alert("Invalid room data");
       router.push("/");
@@ -46,10 +51,19 @@ export default function ChatRoom() {
 
   useEffect(() => {
     socket.on("message", (pack) => {
-      console.log(pack.message)
 
       // setMessages((prev) => [...prev, { type: "text", content: `${pack.nickname}: ${pack.message}` }]);
       setMessages((prev) => [...prev, { nickname: pack.nickname, type: "text", content: pack.message }]);
+      console.log(123)
+
+      // 僅提示來自其他用戶的訊息
+      console.log(pack.nickname, nickname, pack.nicknamne !== nickname)
+      if (pack.nickname !== nickname) {
+        new Notification("New Message", {
+          body: pack.message,
+          icon: './'
+        });
+      }
     });
 
     return () => {
@@ -83,8 +97,9 @@ export default function ChatRoom() {
 
   // 發送文字訊息（支援 Markdown）
   const sendMessage = () => {
-    socket.emit("message", roomId, nickname, message);
     if (message.trim() === "") return;
+
+    socket.emit("message", roomId, nickname, message);
     setMessage("");
   };
 
