@@ -1,10 +1,14 @@
 import express, { Express } from "express";
 import http from "http";
 import { Server, Socket } from "socket.io";
+import {PrismaClient} from '@prisma/client'
+
 
 const app: Express = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
+const prisma = new PrismaClient()
+
 
 // 當前房間列表（可用資料庫替代）
 const rooms: Record<string, string[]> = {};
@@ -14,15 +18,21 @@ io.on("connection", (socket: Socket) => {
   console.log("User connected:", socket.id);
 
   // 創建房間
-  socket.on("createRoom", (callback) => {
-    const roomId = Math.random().toString(36).substring(2, 10); // 隨機生成房間 ID
+  socket.on("createRoom", async (callback) => {
+    const room = await prisma.room.create({
+      data: {} // Prisma 自動生成 id 和 createdAt
+    })
+    const roomId = room.id
     rooms[roomId] = []; // 初始化房間
-    console.log(`Room created: ${roomId}`);
+    console.log('======rooms:', rooms)
+    console.log(`======Room created: ${roomId}`);
     callback(roomId); // 返回房間 ID
   });
 
   // 加入房間
   socket.on("joinRoom", (roomId, nickname, callback) => {
+    console.log(`======joinRoom: ${roomId}`)
+    console.log(`rooms[roomId]:`, rooms[roomId])
     if (!rooms[roomId]) {
       return callback({ error: "Room does not exist" });
     }
@@ -38,9 +48,9 @@ io.on("connection", (socket: Socket) => {
   });
 
   // 發送消息
-  socket.on("message", (roomId, message) => {
-    console.log(`Message in room ${roomId}: ${message}`);
-    io.to(roomId).emit("message", message); // 僅發送給該房間用戶
+  socket.on("message", (roomId, nickname, message) => {
+    console.log(`Message in room ${roomId}: ${nickname}: ${message}`);
+    io.to(roomId).emit("message", {nickname, message}); // 僅發送給該房間用戶
   });
 
   // 斷開連接
