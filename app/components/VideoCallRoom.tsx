@@ -1,8 +1,9 @@
 'use client'
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useContext } from "react";
 import AgoraRTC from "agora-rtc-sdk-ng";
 import { useRouter } from "next/navigation";
+import { ChatContext } from "app/context/ChatContextProvider";
 
 AgoraRTC.setLogLevel(2); // 關閉所有日誌
 
@@ -10,16 +11,17 @@ const SCREEN_SHARE_UID = 1;
 
 const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
 
+
 /**
  * todo: 
  * 1. 增加準備進入視訊通話的畫面
- * 2. 建立 Context 控制狀態，儲存返回聊天室的URL
+ * 2. 建立 Context 控制狀態，儲存返回聊天室的URL - done
  * 3. 開啟分享螢幕模式之後，頻道內視訊列表會重新排列
  * 4. 每個 video tag 應該都要可以有放大到全螢幕的效果
  * 5. 實作離開頻道與結束螢幕分享的邏輯
  */
 export default function VideoCallRoom({roomId}: {roomId: string}) {
-    const router = useRouter();
+    const chatCtx = useContext(ChatContext);
 
     const [localAudioTrack, setLocalAudioTrack] = useState<any>(null);
     const [localVideoTrack, setLocalVideoTrack] = useState<any>(null);
@@ -164,6 +166,7 @@ export default function VideoCallRoom({roomId}: {roomId: string}) {
                 </button>
                 <button
                     className="bg-blue-500 text-white px-4 py-2 rounded"
+                    onClick={() => chatCtx.toggleMode("chat")}
                 >
                     Back to Chat
                 </button>
@@ -178,18 +181,15 @@ export default function VideoCallRoom({roomId}: {roomId: string}) {
             {remoteUsers.map(user => (
                 <div
                   key={user.uid}
-                  className={`bg-gray-400 rounded-lg w-[480px] h-[270px]`}
+                  className="bg-gray-400 rounded-lg w-[480px] h-[270px]"
                   ref={(el) => el && user.videoTrack?.play(el)}
                 />
             ))}
-        </div>
-
-        {/* 自己的畫面 */}
-        <div className="h-32 bg-gray-700 flex items-center justify-center text-white">
-          <div
-            className="w-24 h-24 bg-gray-500 rounded-full"
-            ref={selfScreenRef}
-          />
+            {/* 自己的畫面 */}
+            <div
+                className="rounded-lg w-[480px] h-[270px]"
+                ref={selfScreenRef}
+            />
         </div>
       </div>
     </div>

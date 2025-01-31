@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { useRouter } from "next/navigation";
 import { encryptData, decryptData } from "@utils/crypto";
 import { FiSend, FiImage } from "react-icons/fi";
 import { IoVideocamOutline, IoCopyOutline } from "react-icons/io5";
-
 import { useDropzone } from "react-dropzone";
 import axios from "axios";
 import ReactMarkdown from "react-markdown";
@@ -15,20 +14,21 @@ import { atomDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { useParams } from "next/navigation";
 import { io } from "socket.io-client";
 import VideoCallRoom from "./VideoCallRoom";
+import VideoPreparingRoom from "./VideoPreparingRoom";
+import { ChatContext } from "app/context/ChatContextProvider";
 
 const socket = io("http://localhost:3001");
 
 export default function ChatRoom() {
   const router = useRouter();
   const [roomId, setRoomId] = useState("");
-  const [nickname, setNickname] = useState("");
   const [messages, setMessages] = useState<{ type: "text" | "image", nickname: string, content: string }[]>([]);
   const [message, setMessage] = useState("");
   const [inviteLink, setInviteLink] = useState("");
-  const [mode, setMode] = useState("meeting")
   const [rows, setRows] = useState(1);
   const { encrypted } = useParams();
   const decrypted = decryptData(encrypted);
+  const chatCtx = useContext(ChatContext);
 
   useEffect(() => {
     // 確保用戶允許通知
@@ -42,8 +42,9 @@ export default function ChatRoom() {
 
       return;
     }
+
     setRoomId(decrypted.roomId);
-    setNickname(decrypted.nickname);
+    chatCtx.toggleNickname(decrypted.nickname)
     setInviteLink(encryptData({roomId: decrypted.roomId}))
 
     socket.emit("joinRoom", decrypted.roomId, "Anonymous", (response: any) => {
@@ -58,8 +59,7 @@ export default function ChatRoom() {
       setMessages(prev => [...prev, { nickname: pack.nickname, type: "text", content: pack.message }]);
 
       // 僅提示來自其他用戶的訊息
-      console.log(pack.nickname, nickname, pack.nicknamne !== nickname)
-      if (pack.nickname !== nickname) {
+      if (pack.nickname !== chatCtx.nickname) {
         new Notification("New Message", {
           body: pack.message,
         });
@@ -99,7 +99,7 @@ export default function ChatRoom() {
   const sendMessage = () => {
     if (message.trim() === "") return;
 
-    socket.emit("message", roomId, nickname, message);
+    socket.emit("message", roomId, chatCtx.nickname, message);
     setMessage("");
   };
 
@@ -122,7 +122,7 @@ export default function ChatRoom() {
     try {
       const response = await axios.post("/api/upload", formData);
       const imageUrl = response.data.url;
-      setMessages((prev) => [...prev, { type: "image", nickname: nickname, content: imageUrl }]);
+      setMessages((prev) => [...prev, { type: "image", nickname: chatCtx.nickname, content: imageUrl }]);
     } catch (error) {
       console.error("Image upload failed", error);
     }
@@ -154,18 +154,19 @@ export default function ChatRoom() {
   };
 
   const handleStartMeeting = () => {
-    setMode("meeting")
+    chatCtx.toggleMode("meeting")
   }
 
+  console.log(chatCtx.mode)
 
-  if (mode === "chat") {
+  if (chatCtx.mode === "chat") {
     return (
       <div className="flex h-screen">
         
         {/* 左側：房間資訊 */}
         <div className="w-1/4 bg-gray-800 text-white p-4 flex flex-col">
           <h2 className="text-lg font-bold">Room: {roomId}</h2>
-          <p className="mt-2">Nickname: {nickname}</p>
+          <p className="mt-2">Nickname: {chatCtx.nickname}</p>
           <button 
             className="mt-2 bg-white text-black px-1 py-2 rounded-md shadow-md font-bold hover:bg-gray-100 flex justify-center items-center gap-1"
             onClick={handleCopyLink}
@@ -190,9 +191,9 @@ export default function ChatRoom() {
               <div key={idx} className="mb-2">
                 {msg.type === "text" ? (
                   <>
-                    {nickname !== msg.nickname ? <span>{msg.nickname} : </span> : <></>}
+                    {chatCtx.nickname !== msg.nickname ? <span>{msg.nickname} : </span> : <></>}
                     <ReactMarkdown
-                      className={nickname === msg.nickname ? 'text-right' : ''}
+                      className={chatCtx.nickname === msg.nickname ? 'text-right' : ''}
                       remarkPlugins={[remarkGfm]}
                       components={renderers}
                     >
@@ -233,7 +234,11 @@ export default function ChatRoom() {
     );
   }
   
-  if (mode === "meeting") {
+  if (chatCtx.mode === "meeting") {
     return <VideoCallRoom roomId={roomId} />
+  }
+
+  if (chatCtx.mode === "preparing") {
+    return <VideoPreparingRoom roomId={roomId} />
   }
 }

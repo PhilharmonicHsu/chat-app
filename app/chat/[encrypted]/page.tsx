@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import {decryptData, encryptData} from "@utils/crypto";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-
+import ChatContextProvider from '../../context/ChatContextProvider'
 
 
 export default function RoomPage() {
@@ -55,8 +55,8 @@ export default function RoomPage() {
   }
 
   return (
-    <div>
+    <ChatContextProvider>
       <ChatRoom/>
-    </div>
+    </ChatContextProvider>
   );
 }
