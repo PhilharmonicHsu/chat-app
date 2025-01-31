@@ -3,7 +3,9 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { encryptData, decryptData } from "@utils/crypto";
-import { FiSend, FiMonitor, FiLink, FiImage } from "react-icons/fi";
+import { FiSend, FiImage } from "react-icons/fi";
+import { IoVideocamOutline, IoCopyOutline } from "react-icons/io5";
+
 import { useDropzone } from "react-dropzone";
 import axios from "axios";
 import ReactMarkdown from "react-markdown";
@@ -12,6 +14,7 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { atomDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { useParams } from "next/navigation";
 import { io } from "socket.io-client";
+import VideoCallRoom from "./VideoCallRoom";
 
 const socket = io("http://localhost:3001");
 
@@ -22,6 +25,7 @@ export default function ChatRoom() {
   const [messages, setMessages] = useState<{ type: "text" | "image", nickname: string, content: string }[]>([]);
   const [message, setMessage] = useState("");
   const [inviteLink, setInviteLink] = useState("");
+  const [mode, setMode] = useState("meeting")
   const [rows, setRows] = useState(1);
   const { encrypted } = useParams();
   const decrypted = decryptData(encrypted);
@@ -51,17 +55,13 @@ export default function ChatRoom() {
 
   useEffect(() => {
     socket.on("message", (pack) => {
-
-      // setMessages((prev) => [...prev, { type: "text", content: `${pack.nickname}: ${pack.message}` }]);
-      setMessages((prev) => [...prev, { nickname: pack.nickname, type: "text", content: pack.message }]);
-      console.log(123)
+      setMessages(prev => [...prev, { nickname: pack.nickname, type: "text", content: pack.message }]);
 
       // 僅提示來自其他用戶的訊息
       console.log(pack.nickname, nickname, pack.nicknamne !== nickname)
       if (pack.nickname !== nickname) {
         new Notification("New Message", {
           body: pack.message,
-          icon: './'
         });
       }
     });
@@ -153,67 +153,87 @@ export default function ChatRoom() {
     ),
   };
 
-  return (
-    <div className="flex h-screen">
-      {/* 左側：房間資訊 */}
-      <div className="w-1/4 bg-gray-800 text-white p-4">
-        <h2 className="text-lg font-bold">Room: {roomId}</h2>
-        <p className="mt-2">Nickname: {nickname}</p>
-        <button 
-          className="mt-2 bg-white text-black px-1 py-2 rounded-md shadow-md font-bold hover:bg-gray-100"
-          onClick={handleCopyLink}
-        >
-          Copy Invite Link
-        </button>
-      </div>
+  const handleStartMeeting = () => {
+    setMode("meeting")
+  }
 
-      {/* 右側：聊天內容 */}
-      <div className="w-3/4 flex flex-col">
-        {/* 訊息顯示區（支援 Markdown） */}
-        <div className="text-black flex-grow bg-gray-100 p-4 overflow-y-auto">
-          {messages.map((msg, idx) => (
-            <div key={idx} className="mb-2">
-              {msg.type === "text" ? (
-                <>
-                  {nickname !== msg.nickname ? <span>{msg.nickname} : </span> : <></>}
-                  <ReactMarkdown
-                    className={nickname === msg.nickname ? 'text-right' : ''}
-                    remarkPlugins={[remarkGfm]}
-                    components={renderers}
-                  >
-                    {msg.content}
-                  </ReactMarkdown>
-                </>
-              ) : (
-                <img src={msg.content} alt="uploaded" className="max-w-xs rounded-lg shadow-md" />
-              )}
-            </div>
-          ))}
-        </div>
 
-        {/* 底部輸入區 */}
-        <div className="p-4 bg-white border-t flex items-center">
-          <textarea
-            rows={rows}
-            placeholder="Type message (Supports Markdown) & Type message (Shift + Enter to newline)"
-            value={message}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-            className="flex-grow border rounded px-4 py-2 mr-2 text-black"
-          />
-
-          {/* 圖片上傳區 */}
-          <div {...getRootProps()} className="cursor-pointer p-2 bg-gray-300 rounded-lg mr-2">
-            <input {...getInputProps()} />
-            <FiImage size={20} />
-          </div>
-
-          {/* 發送按鈕 */}
-          <button onClick={sendMessage} className="bg-blue-500 text-white p-2 rounded-lg mr-2">
-            <FiSend size={20} />
+  if (mode === "chat") {
+    return (
+      <div className="flex h-screen">
+        
+        {/* 左側：房間資訊 */}
+        <div className="w-1/4 bg-gray-800 text-white p-4 flex flex-col">
+          <h2 className="text-lg font-bold">Room: {roomId}</h2>
+          <p className="mt-2">Nickname: {nickname}</p>
+          <button 
+            className="mt-2 bg-white text-black px-1 py-2 rounded-md shadow-md font-bold hover:bg-gray-100 flex justify-center items-center gap-1"
+            onClick={handleCopyLink}
+          >
+            <IoCopyOutline className="w-5 h-5" />
+            Copy Invite Link
+          </button>
+          <button 
+            className="mt-2 bg-white text-black px-1 py-2 rounded-md shadow-md font-bold hover:bg-gray-100 flex justify-center items-center gap-2"
+            onClick={handleStartMeeting}
+          >
+            <IoVideocamOutline className="w-6 h-6" />
+            Start Meeting
           </button>
         </div>
+  
+        {/* 右側：聊天內容 */}
+        <div className="w-3/4 flex flex-col">
+          {/* 訊息顯示區（支援 Markdown） */}
+          <div className="text-black flex-grow bg-gray-100 p-4 overflow-y-auto">
+            {messages.map((msg, idx) => (
+              <div key={idx} className="mb-2">
+                {msg.type === "text" ? (
+                  <>
+                    {nickname !== msg.nickname ? <span>{msg.nickname} : </span> : <></>}
+                    <ReactMarkdown
+                      className={nickname === msg.nickname ? 'text-right' : ''}
+                      remarkPlugins={[remarkGfm]}
+                      components={renderers}
+                    >
+                      {msg.content}
+                    </ReactMarkdown>
+                  </>
+                ) : (
+                  <img src={msg.content} alt="uploaded" className="max-w-xs rounded-lg shadow-md" />
+                )}
+              </div>
+            ))}
+          </div>
+  
+          {/* 底部輸入區 */}
+          <div className="p-4 bg-white border-t flex items-center">
+            <textarea
+              rows={rows}
+              placeholder="Type message (Supports Markdown) & Type message (Shift + Enter to newline)"
+              value={message}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              className="flex-grow border rounded px-4 py-2 mr-2 text-black"
+            />
+  
+            {/* 圖片上傳區 */}
+            <div {...getRootProps()} className="cursor-pointer p-2 bg-gray-300 rounded-lg mr-2">
+              <input {...getInputProps()} />
+              <FiImage size={20} />
+            </div>
+  
+            {/* 發送按鈕 */}
+            <button onClick={sendMessage} className="bg-blue-500 text-white p-2 rounded-lg mr-2">
+              <FiSend size={20} />
+            </button>
+          </div>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+  
+  if (mode === "meeting") {
+    return <VideoCallRoom roomId={roomId} />
+  }
 }
