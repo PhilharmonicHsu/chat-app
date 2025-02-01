@@ -4,10 +4,14 @@ import React, { useEffect, useState, useRef, useContext } from "react";
 import AgoraRTC from "agora-rtc-sdk-ng";
 import { useRouter } from "next/navigation";
 import { ChatContext } from "app/context/ChatContextProvider";
+import SoundIcon from "./icons/SoundIcon";
+import SoundOffIcon from "./icons/SoundOffIcon"
+import VideoIcon from "./icons/videoIcon";
+import VideoOffIcon from "./icons/VideoOffIcon";
+
+
 
 AgoraRTC.setLogLevel(2); // 關閉所有日誌
-
-const SCREEN_SHARE_UID = 1;
 
 const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
 
@@ -61,7 +65,9 @@ export default function VideoCallRoom({roomId}: {roomId: string}) {
           joinChannel()
     }, []);
 
-    
+    useEffect(() => {
+        
+    }, [isVideoEnable])
 
     const prepared = async () => {
         localAudioTrack?.close();
@@ -69,18 +75,20 @@ export default function VideoCallRoom({roomId}: {roomId: string}) {
         client.leave();
     }
 
+    const toggleSound = async () => {
+        await localAudioTrack.setEnabled(! isAudioEnable)
+        setIsAudioEnable(! isAudioEnable);
+    }
+
     const toggleVideo = async () => {
-        console.log(localVideoTrack)
-        if (localVideoTrack) {
-            await localVideoTrack.setEnabled(! isVideoEnable);
-            setIsVideoEnable(! isVideoEnable);
-        }
+        await localVideoTrack.setEnabled(! isVideoEnable);
+        setIsVideoEnable(! isVideoEnable);
     }
 
   return (
     <div className="flex h-screen">
       {/* 左側：房間資訊 */}
-      <div className="w-1/8 bg-gray-800 text-white p-4">
+      <div className="w-1/8 bg-gray-800 text-white p-4 flex flex-col gap-4">
         <h2 className="text-lg font-bold mb-4">Preparing</h2>
         <div className="flex flex-col gap-4">
             <button
@@ -95,6 +103,21 @@ export default function VideoCallRoom({roomId}: {roomId: string}) {
                 Back to Chat
             </button>
         </div>
+        <div className="border border-solid border-white rounded-lg flex flex-col gap-4">
+            <h2 className="text-center font-bold">Setting Up</h2>
+            <button 
+                className="bg-white p-4 rounded-md w-fit"
+                onClick={toggleSound}
+            >
+                {isAudioEnable ? <SoundOffIcon /> : <SoundIcon />}
+            </button>
+            <button 
+                className="bg-white p-4 rounded-md w-fit"
+                onClick={toggleVideo}
+            >
+                {isVideoEnable ? <VideoIcon /> : <VideoOffIcon />}
+            </button>
+        </div>
       </div>
 
       {/* 右側：視訊畫面 */}
@@ -104,9 +127,6 @@ export default function VideoCallRoom({roomId}: {roomId: string}) {
             className="rounded-lg w-full h-full"
             ref={selfScreenRef}
         />
-        <div>
-            
-        </div>
       </div>
     </div>
   );

@@ -17,7 +17,7 @@ export const ChatContext = createContext<ChatContextType>({
 });
 
 export default function ChatContextProvider({children}) {
-    const [mode, setMode] = useState('chat');
+    const [mode, setMode] = useState('preparing');
     const [nickname, setNickname] = useState('');
 
     const toggleMode = (mode: string) => {
