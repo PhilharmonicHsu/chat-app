@@ -3,7 +3,8 @@
 import { useState, useEffect, useContext } from "react";
 import { useRouter } from "next/navigation";
 import { encryptData, decryptData } from "@utils/crypto";
-import { FiSend, FiImage } from "react-icons/fi";
+import { FiSend, FiImage, FiMenu } from "react-icons/fi";
+import { TiTimes } from "react-icons/ti";
 import { IoVideocamOutline, IoCopyOutline } from "react-icons/io5";
 import { useDropzone } from "react-dropzone";
 import axios from "axios";
@@ -16,6 +17,8 @@ import { io } from "socket.io-client";
 import VideoCallRoom from "./VideoCallRoom";
 import VideoPreparingRoom from "./VideoPreparingRoom";
 import { ChatContext } from "app/context/ChatContextProvider";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const socket = io("http://localhost:3001");
 
@@ -28,6 +31,8 @@ export default function ChatRoom() {
   const { encrypted } = useParams();
   const decrypted = decryptData(encrypted);
   const chatCtx = useContext(ChatContext);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isContentVisible, setIsContentVisible] = useState(true);
 
   useEffect(() => {
     // 確保用戶允許通知
@@ -108,8 +113,9 @@ export default function ChatRoom() {
     const link = `${window.location.origin}/chat/${inviteLink}`;
 
     navigator.clipboard.writeText(link).then(() => {
-      // setCopied(true);
-      // setTimeout(() => setCopied(false), 2000); // 2 秒後自動隱藏「已複製」
+      toast.success("Copied!", {
+        position: 'top-center',
+      });
     });
   };
 
@@ -157,32 +163,53 @@ export default function ChatRoom() {
     chatCtx.toggleMode("preparing")
   }
 
+  const handleToggleMenu = () => {
+    setIsContentVisible(false);
+    setIsMenuOpen((prev) => !prev);
+    setTimeout(() => {
+      setIsContentVisible(true);
+    }, 500);
+  }
+
+  const sideBarWidth = isMenuOpen ? 'w-[25%]' : 'w-20';
+  const buttonPosition = isMenuOpen ? 'justify-end' : 'justify-center'
+
   if (chatCtx.mode === "chat") {
     return (
       <div className="flex h-screen">
         
         {/* 左側：房間資訊 */}
-        <div className="w-1/4 bg-gray-800 text-white p-4 flex flex-col">
-          <h2 className="text-lg font-bold">Room: {chatCtx.roomId}</h2>
-          <p className="mt-2">Nickname: {chatCtx.nickname}</p>
-          <button 
-            className="mt-2 bg-white text-black px-1 py-2 rounded-md shadow-md font-bold hover:bg-gray-100 flex justify-center items-center gap-1"
-            onClick={handleCopyLink}
-          >
-            <IoCopyOutline className="w-5 h-5" />
-            Copy Invite Link
-          </button>
-          <button 
-            className="mt-2 bg-white text-black px-1 py-2 rounded-md shadow-md font-bold hover:bg-gray-100 flex justify-center items-center gap-2"
-            onClick={handleStartMeeting}
-          >
-            <IoVideocamOutline className="w-6 h-6" />
-            Start Meeting
-          </button>
+        <div className={`${sideBarWidth} bg-gradient-to-b from-[#5A5A5A] to-[#836953] text-white p-4 flex flex-col gap-6 overflow-hidden transition-all duration-500 ease-in-out`}>
+        <button
+          className={`lg p-2 rounded-full flex ${buttonPosition}`}
+          onClick={handleToggleMenu}
+        >
+          <span className={isContentVisible ? "opacity-100" : "opacity-0"}>
+            {isMenuOpen ? <TiTimes size={24} /> : <FiMenu size={24} />}
+          </span>
+        </button> 
+          {isMenuOpen && isContentVisible && <>
+            <h2 className="text-lg font-bold">Room: {chatCtx.roomId}</h2>
+            <p className="mt-2">Nickname: {chatCtx.nickname}</p>
+            <button 
+              className="bg-gradient-to-r from-[#6B93D6] to-[#375A96] px-6 py-3 rounded-lg text-white text-lg font-semibold shadow-md hover:shadow-xl hover:scale-105 transform transition flex justify-center items-center gap-2"
+              onClick={handleCopyLink}
+            >
+              <IoCopyOutline className="w-5 h-5" />
+              Copy Invite Link
+            </button>
+            <button 
+              className="bg-gradient-to-r from-[#9A7957] to-[#6C553B] px-6 py-3 rounded-lg text-white text-lg font-semibold shadow-md hover:shadow-xl hover:scale-105 transform transition flex justify-center items-center gap-2"
+              onClick={handleStartMeeting}
+            >
+              <IoVideocamOutline className="w-6 h-6" />
+              Start Meeting
+            </button>
+          </>}
         </div>
   
         {/* 右側：聊天內容 */}
-        <div className="w-3/4 flex flex-col">
+        <div className="w-full flex flex-col">
           {/* 訊息顯示區（支援 Markdown） */}
           <div className="text-black flex-grow bg-gray-100 p-4 overflow-y-auto">
             {messages.map((msg, idx) => (
@@ -228,6 +255,7 @@ export default function ChatRoom() {
             </button>
           </div>
         </div>
+        <ToastContainer autoClose={3000} />
       </div>
     );
   }
