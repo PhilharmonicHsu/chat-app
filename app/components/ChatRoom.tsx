@@ -21,7 +21,6 @@ const socket = io("http://localhost:3001");
 
 export default function ChatRoom() {
   const router = useRouter();
-  const [roomId, setRoomId] = useState("");
   const [messages, setMessages] = useState<{ type: "text" | "image", nickname: string, content: string }[]>([]);
   const [message, setMessage] = useState("");
   const [inviteLink, setInviteLink] = useState("");
@@ -43,7 +42,8 @@ export default function ChatRoom() {
       return;
     }
 
-    setRoomId(decrypted.roomId);
+    // setRoomId(decrypted.roomId);
+    chatCtx.toggleRoomId(decrypted.roomId)
     chatCtx.toggleNickname(decrypted.nickname)
     setInviteLink(encryptData({roomId: decrypted.roomId}))
 
@@ -68,9 +68,9 @@ export default function ChatRoom() {
 
     return () => {
       socket.off("message");
-      socket.emit("leaveRoom", roomId);
+      socket.emit("leaveRoom", chatCtx.roomId);
     };
-  }, [roomId]);
+  }, [chatCtx.roomId]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMessage(e.target.value);
@@ -99,7 +99,7 @@ export default function ChatRoom() {
   const sendMessage = () => {
     if (message.trim() === "") return;
 
-    socket.emit("message", roomId, chatCtx.nickname, message);
+    socket.emit("message", chatCtx.roomId, chatCtx.nickname, message);
     setMessage("");
   };
 
@@ -154,10 +154,8 @@ export default function ChatRoom() {
   };
 
   const handleStartMeeting = () => {
-    chatCtx.toggleMode("meeting")
+    chatCtx.toggleMode("preparing")
   }
-
-  console.log(chatCtx.mode)
 
   if (chatCtx.mode === "chat") {
     return (
@@ -165,7 +163,7 @@ export default function ChatRoom() {
         
         {/* 左側：房間資訊 */}
         <div className="w-1/4 bg-gray-800 text-white p-4 flex flex-col">
-          <h2 className="text-lg font-bold">Room: {roomId}</h2>
+          <h2 className="text-lg font-bold">Room: {chatCtx.roomId}</h2>
           <p className="mt-2">Nickname: {chatCtx.nickname}</p>
           <button 
             className="mt-2 bg-white text-black px-1 py-2 rounded-md shadow-md font-bold hover:bg-gray-100 flex justify-center items-center gap-1"
@@ -235,10 +233,10 @@ export default function ChatRoom() {
   }
   
   if (chatCtx.mode === "meeting") {
-    return <VideoCallRoom roomId={roomId} />
+    return <VideoCallRoom />
   }
 
   if (chatCtx.mode === "preparing") {
-    return <VideoPreparingRoom roomId={roomId} />
+    return <VideoPreparingRoom />
   }
 }

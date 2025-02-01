@@ -7,18 +7,33 @@ interface ChatContextType {
     toggleMode: (mode: string) => void;
     nickname: string,
     toggleNickname: (nickname: string) => void;
+    isAudioEnabled: boolean,
+    toggleIsAudioEnabled: (status: boolean) => void;
+    isVideoEnabled: boolean,
+    toggleIsVideoEnabled: (status: boolean) => void;
+    roomId: string,
+    toggleRoomId: (roomId: string) => void;
 }
 
 export const ChatContext = createContext<ChatContextType>({
     mode: 'chat',
     toggleMode: () => {},
     nickname: '',
-    toggleNickname: () => {}
+    toggleNickname: () => {},
+    isAudioEnabled: true,
+    toggleIsAudioEnabled: () => {},
+    isVideoEnabled: true,
+    toggleIsVideoEnabled: () => {},
+    roomId: '',
+    toggleRoomId: () => {}
 });
 
 export default function ChatContextProvider({children}) {
-    const [mode, setMode] = useState('preparing');
+    const [mode, setMode] = useState('chat');
     const [nickname, setNickname] = useState('');
+    const [isAudioEnabled, setIsAudioEnabled] = useState(true);
+    const [isVideoEnabled, setIsVideoEnabled] = useState(true);
+    const [roomId, setRoomId] = useState('');
 
     const toggleMode = (mode: string) => {
         setMode(mode)
@@ -28,11 +43,29 @@ export default function ChatContextProvider({children}) {
         setNickname(nickname)
     }
 
+    const toggleIsAudioEnabled = (status: boolean) => {
+        setIsAudioEnabled(status);
+    }
+
+    const toggleIsVideoEnabled = (status: boolean) => {
+        setIsVideoEnabled(status);
+    }
+
+    const toggleRoomId = (roomId: string) => {
+        setRoomId(roomId);
+    }
+
     const value = {
         mode,
         toggleMode,
         nickname,
-        toggleNickname
+        toggleNickname,
+        isAudioEnabled,
+        toggleIsAudioEnabled,
+        isVideoEnabled,
+        toggleIsVideoEnabled,
+        roomId,
+        toggleRoomId
     }
 
     return <ChatContext.Provider value={value}>

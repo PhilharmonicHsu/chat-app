@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState, useRef, useContext } from "react";
 import AgoraRTC from "agora-rtc-sdk-ng";
-import { useRouter } from "next/navigation";
 import { ChatContext } from "app/context/ChatContextProvider";
 
 AgoraRTC.setLogLevel(2); // 關閉所有日誌
@@ -20,7 +19,7 @@ const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
  * 4. 每個 video tag 應該都要可以有放大到全螢幕的效果
  * 5. 實作離開頻道與結束螢幕分享的邏輯
  */
-export default function VideoCallRoom({roomId}: {roomId: string}) {
+export default function VideoCallRoom() {
     const chatCtx = useContext(ChatContext);
 
     const [localAudioTrack, setLocalAudioTrack] = useState<any>(null);
@@ -34,7 +33,7 @@ export default function VideoCallRoom({roomId}: {roomId: string}) {
     const [isVideoEnable, setIsVideoEnable] = useState(true);
 
     const APP_ID = process.env.NEXT_PUBLIC_AGORA_APP_ID!; // 替換為你的 Agora App ID
-    const CHANNEL_NAME = roomId; 
+    const CHANNEL_NAME = chatCtx.roomId; 
 
     useEffect(() => {
     }, []);
@@ -55,7 +54,10 @@ export default function VideoCallRoom({roomId}: {roomId: string}) {
         tracks.push(videoTrack)
 
         await client.publish(tracks);
-        videoTrack?.play(selfScreenRef.current)
+    
+        if (selfScreenRef.current) {
+            videoTrack?.play(selfScreenRef.current)
+        }
 
         // 更新遠端用戶
         client.on("user-published", async (user, mediaType) => {            
