@@ -1,39 +1,51 @@
 import { NextResponse } from "next/server";
-import AWS from "aws-sdk";
-import multer from "multer";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
-// 設定 AWS S3 連接
-const s3 = new AWS.S3({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  region: process.env.AWS_REGION,
+const s3 = new S3Client({
+  region: process.env.AWS_REGION!,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!
+  }
 });
 
-// 設定 Multer 上傳
-const upload = multer({ storage: multer.memoryStorage() });
-
 export async function POST(req: Request) {
+  const contentType = req.headers.get("content-type") || "";
+
+  // 確保請求是 multipart/form-data 格式
+  if (!contentType.includes("multipart/form-data")) {
+    return NextResponse.json({ error: "Invalid content type" }, { status: 400 });
+  }
+
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File;
 
     if (!file) return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
+  
+    const fileBuffer = Buffer.from(await file.arrayBuffer());
 
-    const fileBuffer = await file.arrayBuffer();
-    const fileName = `uploads/${Date.now()}-${file.name}`;
+    const fileName = `${Date.now()}-${file.name}`;
+
+    const bucketName = process.env.AWS_S3_BUCKET_NAME!
+    const region = process.env.AWS_REGION!;
+    const key = `chat-app/${fileName}`;
+
+    const params = {
+      Bucket: process.env.AWS_S3_BUCKET_NAME!,
+      Key: key,
+      Body: fileBuffer,
+      ContentType: file.type,
+    };
 
     // 上傳到 S3
-    const uploadResult = await s3
-      .upload({
-        Bucket: process.env.AWS_S3_BUCKET_NAME!,
-        Key: fileName,
-        Body: Buffer.from(fileBuffer),
-        ACL: "public-read",
-        ContentType: file.type,
-      })
-      .promise();
+    const command = new PutObjectCommand(params);
+    await s3.send(command);
 
-    return NextResponse.json({ url: uploadResult.Location });
+    const fileUrl = `https://${bucketName}.s3.${region}.amazonaws.com/${key}`;
+
+
+    return NextResponse.json({ url: fileUrl });
   } catch (error) {
     console.error("Upload failed:", error);
 

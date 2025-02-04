@@ -3,7 +3,10 @@
 import { useState, useEffect, useContext } from "react";
 import { useRouter } from "next/navigation";
 import { encryptData, decryptData } from "@utils/crypto";
-import { FiSend, FiImage, FiMenu } from "react-icons/fi";
+import { FaCode } from "react-icons/fa";
+import { GoImage } from "react-icons/go";
+import { FiSend, FiMenu } from "react-icons/fi";
+import { MdClose } from "react-icons/md";
 import { TiTimes } from "react-icons/ti";
 import { IoVideocamOutline, IoCopyOutline } from "react-icons/io5";
 import { useDropzone } from "react-dropzone";
@@ -19,6 +22,7 @@ import VideoPreparingRoom from "./VideoPreparingRoom";
 import { ChatContext } from "app/context/ChatContextProvider";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { log } from "console";
 
 const socket = io("http://localhost:3001");
 
@@ -33,6 +37,7 @@ export default function ChatRoom() {
   const chatCtx = useContext(ChatContext);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isContentVisible, setIsContentVisible] = useState(true);
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
 
   useEffect(() => {
     // 確保用戶允許通知
@@ -101,12 +106,42 @@ export default function ChatRoom() {
   };
 
   // 發送文字訊息（支援 Markdown）
-  const sendMessage = () => {
-    if (message.trim() === "") return;
+  const sendMessage = async() => {
+    // if (message.trim() === "" && selectedImages.length === 0) return;
 
-    socket.emit("message", chatCtx.roomId, chatCtx.nickname, message);
-    setMessage("");
+    if (message.trim() !== "") {
+      socket.emit("message", chatCtx.roomId, chatCtx.nickname, message);
+      setMessage("");
+    } 
+
+    if (selectedImages.length !== 0) {
+      selectedImages.forEach(async (acceptedFiles) => {
+        const file = acceptedFiles;
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+          const response = await axios.post("/api/upload", formData);
+          const imageUrl = response.data.url;
+          setMessages((prev) => [...prev, { type: "image", nickname: chatCtx.nickname, content: imageUrl }]);
+        } catch (error) {
+          console.error("Image upload failed", error);
+        }
+      })
+      setSelectedImages([]);
+    }
+
+    
+    
+    
   };
+
+  const addCodeArea = () => {
+    setMessage(prev => prev += "```plaintext\n\n```\n")
+
+    const lineBreaks = message.split("\n").length += 3;
+    setRows(lineBreaks < 5 ? lineBreaks : 5); // 最多 5 行，最少 1 行
+  }
 
   // 按鈕點擊後複製連結
   const handleCopyLink = () => {
@@ -121,28 +156,24 @@ export default function ChatRoom() {
 
   // 處理圖片上傳到 AWS S3
   const onDrop = async (acceptedFiles: File[]) => {
-    const file = acceptedFiles[0];
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      const response = await axios.post("/api/upload", formData);
-      const imageUrl = response.data.url;
-      setMessages((prev) => [...prev, { type: "image", nickname: chatCtx.nickname, content: imageUrl }]);
-    } catch (error) {
-      console.error("Image upload failed", error);
-    }
+    setSelectedImages((prev) => [...prev, ...acceptedFiles]);
   };
+
+  const removeImage = (index: number) => {
+    setSelectedImages((prev) => prev.filter((_, i) => i !== index));
+  }
 
   const { getRootProps, getInputProps } = useDropzone({ onDrop, accept: "image/*" });
 
   const renderers = {
     code({ node, inline, className, children, ...props }: any) {
       const match = /language-(\w+)/.exec(className || "");
-      return !inline && match ? (
+      const language = match?.[1] || "plaintext";
+
+      return ! inline && match ? (
         <SyntaxHighlighter
           style={atomDark}
-          language={match[1]}
+          language={language}
           PreTag="div"
           {...props}
         >
@@ -152,11 +183,11 @@ export default function ChatRoom() {
         <code className="bg-gray-200 px-2 py-1 rounded">{children}</code>
       );
     },
-    p: ({ node, children, ...props }) => (
-      <span className="text-black bg-white text-xl px-2 py-1 rounded-md border border-solid border-black" {...props}>
+    p: ({ node, children, ...props }) => {
+      return <span className="inline-block text-black bg-white text-xl px-2 py-1 rounded-md border border-solid border-black" {...props}>
         {children}
       </span>
-    ),
+    },
   };
 
   const handleStartMeeting = () => {
@@ -173,6 +204,19 @@ export default function ChatRoom() {
 
   const sideBarWidth = isMenuOpen ? 'w-[25%]' : 'w-20';
   const buttonPosition = isMenuOpen ? 'justify-end' : 'justify-center'
+  const messageClass = (index: number, nickname: string): string => {
+    const classes = ["mb-2"]
+    if (index === 0) {
+      classes.push("mt-2")
+    }
+
+    if (chatCtx.nickname === nickname) {
+      classes.push("flex")
+      classes.push("justify-end")
+    }
+
+    return classes.join(" ")
+  }
 
   if (chatCtx.mode === "chat") {
     return (
@@ -187,7 +231,7 @@ export default function ChatRoom() {
           <span className={isContentVisible ? "opacity-100" : "opacity-0"}>
             {isMenuOpen ? <TiTimes size={24} /> : <FiMenu size={24} />}
           </span>
-        </button> 
+        </button>
           {isMenuOpen && isContentVisible && <>
             <h2 className="text-lg font-bold">Room: {chatCtx.roomId}</h2>
             <p className="mt-2">Nickname: {chatCtx.nickname}</p>
@@ -213,12 +257,11 @@ export default function ChatRoom() {
           {/* 訊息顯示區（支援 Markdown） */}
           <div className="text-black flex-grow bg-gray-100 p-4 overflow-y-auto">
             {messages.map((msg, idx) => (
-              <div key={idx} className="mb-2">
+              <div key={idx} className={messageClass(idx, msg.nickname)}>
                 {msg.type === "text" ? (
                   <>
                     {chatCtx.nickname !== msg.nickname ? <span>{msg.nickname} : </span> : <></>}
                     <ReactMarkdown
-                      className={chatCtx.nickname === msg.nickname ? 'text-right' : ''}
                       remarkPlugins={[remarkGfm]}
                       components={renderers}
                     >
@@ -226,12 +269,34 @@ export default function ChatRoom() {
                     </ReactMarkdown>
                   </>
                 ) : (
-                  <img src={msg.content} alt="uploaded" className="max-w-xs rounded-lg shadow-md" />
+                  <img 
+                    src={msg.content} alt="uploaded" 
+                    className="max-w-xs rounded-lg shadow-md"
+                  />
                 )}
               </div>
             ))}
           </div>
   
+          {/* 圖片預覽區 */}
+          <div className={selectedImages.length === 0 ? "flex gap-6 overflow-x-auto bg-gray-200" : "flex gap-6 overflow-x-auto p-6 bg-gray-200"}>
+            {selectedImages.map((file, index) => (
+              <div key={index} className="relative w-24 h-24">
+                <img
+                  src={URL.createObjectURL(file)}
+                  alt={`preview-${index}`}
+                  className="w-full h-full object-cover rounded-lg shadow-md"
+                />
+                <button
+                  className="absolute -top-4 -right-4 bg-white rounded-full p-1 text-red-500 shadow-md hover:bg-gray-200"
+                  onClick={() => removeImage(index)}
+                >
+                  <MdClose size={20} />
+                </button>
+              </div>
+            ))}
+          </div>
+
           {/* 底部輸入區 */}
           <div className="p-4 bg-white border-t flex items-center">
             <textarea
@@ -244,11 +309,15 @@ export default function ChatRoom() {
             />
   
             {/* 圖片上傳區 */}
-            <div {...getRootProps()} className="cursor-pointer p-2 bg-gray-300 rounded-lg mr-2">
+            <button {...getRootProps()} className="bg-blue-500 p-2 text-white rounded-lg mr-2">
               <input {...getInputProps()} />
-              <FiImage size={20} />
-            </div>
+              <GoImage size={20} />
+            </button>
   
+            <button onClick={addCodeArea} className="bg-blue-500 text-white p-2 rounded-lg mr-2">
+              <FaCode size={20} />
+            </button>
+
             {/* 發送按鈕 */}
             <button onClick={sendMessage} className="bg-blue-500 text-white p-2 rounded-lg mr-2">
               <FiSend size={20} />
