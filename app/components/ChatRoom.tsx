@@ -5,9 +5,8 @@ import { useRouter } from "next/navigation";
 import { encryptData, decryptData } from "@utils/crypto";
 import { FaCode } from "react-icons/fa";
 import { GoImage } from "react-icons/go";
-import { FiSend, FiMenu } from "react-icons/fi";
+import { FiSend } from "react-icons/fi";
 import { MdClose } from "react-icons/md";
-import { TiTimes } from "react-icons/ti";
 import { IoVideocamOutline, IoCopyOutline } from "react-icons/io5";
 import { useDropzone } from "react-dropzone";
 import axios from "axios";
@@ -22,7 +21,8 @@ import VideoPreparingRoom from "./VideoPreparingRoom";
 import { ChatContext } from "app/context/ChatContextProvider";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { log } from "console";
+import Sidebar from './Sidebar'
+import Button from './Button'
 
 const socket = io("http://localhost:3001");
 
@@ -35,8 +35,6 @@ export default function ChatRoom() {
   const { encrypted } = useParams();
   const decrypted = decryptData(encrypted);
   const chatCtx = useContext(ChatContext);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isContentVisible, setIsContentVisible] = useState(true);
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
 
   useEffect(() => {
@@ -52,7 +50,6 @@ export default function ChatRoom() {
       return;
     }
 
-    // setRoomId(decrypted.roomId);
     chatCtx.toggleRoomId(decrypted.roomId)
     chatCtx.toggleNickname(decrypted.nickname)
     setInviteLink(encryptData({roomId: decrypted.roomId}))
@@ -66,10 +63,10 @@ export default function ChatRoom() {
 
   useEffect(() => {
     socket.on("message", (pack) => {
-      setMessages(prev => [...prev, { nickname: pack.nickname, type: "text", content: pack.message }]);
-
       // 僅提示來自其他用戶的訊息
       if (pack.nickname !== chatCtx.nickname) {
+        setMessages(prev => [...prev, { nickname: pack.nickname, type: pack.type, content: pack.message }]);
+
         new Notification("New Message", {
           body: pack.message,
         });
@@ -107,10 +104,9 @@ export default function ChatRoom() {
 
   // 發送文字訊息（支援 Markdown）
   const sendMessage = async() => {
-    // if (message.trim() === "" && selectedImages.length === 0) return;
-
     if (message.trim() !== "") {
-      socket.emit("message", chatCtx.roomId, chatCtx.nickname, message);
+      socket.emit("message", chatCtx.roomId, chatCtx.nickname, 'text', message);
+      setMessages((prev) => [...prev, { type: "text", nickname: chatCtx.nickname, content: message }]);
       setMessage("");
     } 
 
@@ -121,19 +117,17 @@ export default function ChatRoom() {
         formData.append("file", file);
 
         try {
+          setMessages((prev) => [...prev, { type: "image", nickname: chatCtx.nickname, content: URL.createObjectURL(file) }]);
+          
           const response = await axios.post("/api/upload", formData);
           const imageUrl = response.data.url;
-          setMessages((prev) => [...prev, { type: "image", nickname: chatCtx.nickname, content: imageUrl }]);
+          socket.emit("message", chatCtx.roomId, chatCtx.nickname, 'image', imageUrl);
         } catch (error) {
           console.error("Image upload failed", error);
         }
       })
       setSelectedImages([]);
     }
-
-    
-    
-    
   };
 
   const addCodeArea = () => {
@@ -194,25 +188,25 @@ export default function ChatRoom() {
     chatCtx.toggleMode("preparing")
   }
 
-  const handleToggleMenu = () => {
-    setIsContentVisible(false);
-    setIsMenuOpen((prev) => !prev);
-    setTimeout(() => {
-      setIsContentVisible(true);
-    }, 500);
-  }
-
-  const sideBarWidth = isMenuOpen ? 'w-[25%]' : 'w-20';
-  const buttonPosition = isMenuOpen ? 'justify-end' : 'justify-center'
-  const messageClass = (index: number, nickname: string): string => {
+  const messageClass = (index: number, type: string, nickname: string): string => {
     const classes = ["mb-2"]
-    if (index === 0) {
+    if (index !== 0) {
       classes.push("mt-2")
     }
 
+    classes.push("flex")
+
     if (chatCtx.nickname === nickname) {
-      classes.push("flex")
       classes.push("justify-end")
+    }
+
+    if (type === 'image') {
+      classes.push("gap-2")
+    } else {
+      if (chatCtx.nickname !== nickname) {
+        classes.push('gap-2')
+        classes.push('items-center')
+      }
     }
 
     return classes.join(" ")
@@ -223,56 +217,44 @@ export default function ChatRoom() {
       <div className="flex h-screen">
         
         {/* 左側：房間資訊 */}
-        <div className={`${sideBarWidth} bg-gradient-to-b from-[#5A5A5A] to-[#836953] text-white p-4 flex flex-col gap-6 overflow-hidden transition-all duration-500 ease-in-out`}>
-        <button
-          className={`lg p-2 rounded-full flex ${buttonPosition}`}
-          onClick={handleToggleMenu}
-        >
-          <span className={isContentVisible ? "opacity-100" : "opacity-0"}>
-            {isMenuOpen ? <TiTimes size={24} /> : <FiMenu size={24} />}
-          </span>
-        </button>
-          {isMenuOpen && isContentVisible && <>
-            <h2 className="text-lg font-bold">Room: {chatCtx.roomId}</h2>
-            <p className="mt-2">Nickname: {chatCtx.nickname}</p>
-            <button 
-              className="bg-gradient-to-r from-[#6B93D6] to-[#375A96] px-6 py-3 rounded-lg text-white text-lg font-semibold shadow-md hover:shadow-xl hover:scale-105 transform transition flex justify-center items-center gap-2"
-              onClick={handleCopyLink}
-            >
-              <IoCopyOutline className="w-5 h-5" />
-              Copy Invite Link
-            </button>
-            <button 
-              className="bg-gradient-to-r from-[#9A7957] to-[#6C553B] px-6 py-3 rounded-lg text-white text-lg font-semibold shadow-md hover:shadow-xl hover:scale-105 transform transition flex justify-center items-center gap-2"
-              onClick={handleStartMeeting}
-            >
-              <IoVideocamOutline className="w-6 h-6" />
-              Start Meeting
-            </button>
-          </>}
-        </div>
+        <Sidebar>
+          <h2 className="text-lg font-bold">Room: {chatCtx.roomId}</h2>
+          <p className="mt-2">Nickname: {chatCtx.nickname}</p>
+          <Button 
+            color="blue"
+            onClick={handleCopyLink}
+          >
+            <IoCopyOutline className="w-5 h-5" />
+            Copy Invite Link
+          </Button>
+          <Button 
+            color="brown"
+            onClick={handleStartMeeting}
+          >
+            <IoVideocamOutline className="w-6 h-6" />
+            Start Meeting
+          </Button>
+        </Sidebar>
   
         {/* 右側：聊天內容 */}
         <div className="w-full flex flex-col">
           {/* 訊息顯示區（支援 Markdown） */}
           <div className="text-black flex-grow bg-gray-100 p-4 overflow-y-auto">
             {messages.map((msg, idx) => (
-              <div key={idx} className={messageClass(idx, msg.nickname)}>
+              <div key={idx} className={messageClass(idx, msg.type, msg.nickname)}>
+                {chatCtx.nickname !== msg.nickname ? <span>{msg.nickname} :</span> : <></>}
                 {msg.type === "text" ? (
-                  <>
-                    {chatCtx.nickname !== msg.nickname ? <span>{msg.nickname} : </span> : <></>}
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm]}
-                      components={renderers}
-                    >
-                      {msg.content}
-                    </ReactMarkdown>
-                  </>
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={renderers}
+                  >
+                    {msg.content}
+                  </ReactMarkdown>
                 ) : (
                   <img 
                     src={msg.content} alt="uploaded" 
-                    className="max-w-xs rounded-lg shadow-md"
-                  />
+                    className="max-w-xs rounded-lg shadow-md border border-solid border-black"
+                  />                  
                 )}
               </div>
             ))}
@@ -329,7 +311,7 @@ export default function ChatRoom() {
     );
   }
   
-  if (chatCtx.mode === "meeting") {
+  if (chatCtx.mode === "meeting" && chatCtx.roomId !== '') {
     return <VideoCallRoom />
   }
 

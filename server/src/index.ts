@@ -48,9 +48,9 @@ io.on("connection", (socket: Socket) => {
   });
 
   // 發送消息
-  socket.on("message", (roomId, nickname, message) => {
-    console.log(`Message in room ${roomId}: ${nickname}: ${message}`);
-    io.to(roomId).emit("message", {nickname, message}); // 僅發送給該房間用戶
+  socket.on("message", (roomId, nickname, type, message) => {
+    console.log(`Message in room ${roomId}: ${nickname}: ${type} ${message}`);
+    io.to(roomId).emit("message", {nickname, type, message}); // 僅發送給該房間用戶
   });
 
   // 斷開連接
