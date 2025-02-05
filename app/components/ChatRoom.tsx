@@ -237,7 +237,7 @@ export default function ChatRoom() {
         </Sidebar>
   
         {/* 右側：聊天內容 */}
-        <div className="w-full flex flex-col">
+        <div className="w-full flex flex-col ml-20">
           {/* 訊息顯示區（支援 Markdown） */}
           <div className="text-black flex-grow bg-gray-100 p-4 overflow-y-auto">
             {messages.map((msg, idx) => (

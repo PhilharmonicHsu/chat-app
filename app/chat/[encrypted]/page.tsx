@@ -6,7 +6,7 @@ import {decryptData, encryptData} from "@utils/crypto";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ChatContextProvider from '../../context/ChatContextProvider'
-
+import Button from '@components/Button';
 
 export default function RoomPage() {
   const router = useRouter();
@@ -33,22 +33,22 @@ export default function RoomPage() {
 
   if (! decrypted.nickname) {
     return (
-      <div className="h-screen flex justify-center items-center bg-gray-100">
-        <div className="text-center bg-white shadow-lg rounded-lg p-6">
-          <h2 className="text-xl font-bold mb-4">Enter your Nickname</h2>
+      <div className="h-screen flex justify-center items-center bg-gradient-to-b from-[#5A5A5A] to-[#836953]">
+        <div className="text-center bg-white shadow-lg rounded-lg p-6 w-[30rem] flex flex-col justify-center items-center">
+          <h2 className="text-xl font-bold mb-4 text-black">Enter your Nickname</h2>
           <input
             type="text"
             placeholder="Your Nickname"
             value={nickname}
             onChange={(e) => setNickname(e.target.value)}
-            className="border px-4 py-2 rounded-lg w-full mb-4"
+            className="border px-4 py-2 rounded-lg w-full mb-4 text-black"
           />
-          <button
+          <Button
+            color="brown"
             onClick={handleNicknameSubmit}
-            className="bg-blue-500 text-white px-6 py-3 rounded-lg"
           >
             Enter Room
-          </button>
+          </Button>
         </div>
       </div>
     );
