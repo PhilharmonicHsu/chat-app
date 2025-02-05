@@ -218,7 +218,6 @@ export default function ChatRoom() {
         
         {/* 左側：房間資訊 */}
         <Sidebar>
-          <h2 className="text-lg font-bold">Room: {chatCtx.roomId}</h2>
           <p className="mt-2">Nickname: {chatCtx.nickname}</p>
           <Button 
             color="blue"

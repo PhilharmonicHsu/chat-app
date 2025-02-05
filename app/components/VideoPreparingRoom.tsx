@@ -5,11 +5,10 @@ import AgoraRTC from "agora-rtc-sdk-ng";
 import { ChatContext } from "app/context/ChatContextProvider";
 import SoundIcon from "./icons/SoundIcon";
 import SoundOffIcon from "./icons/SoundOffIcon"
-import VideoIcon from "./icons/videoIcon";
+import VideoIcon from "./icons/VideoIcon";
 import VideoOffIcon from "./icons/VideoOffIcon";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-
 
 AgoraRTC.setLogLevel(2); // 關閉所有日誌
 
@@ -23,74 +22,72 @@ const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
  * 4. 每個 video tag 應該都要可以有放大到全螢幕的效果
  * 5. 實作離開頻道與結束螢幕分享的邏輯
  */
+
+const APP_ID = process.env.NEXT_PUBLIC_AGORA_APP_ID!;
+
 export default function VideoCallRoom() {
     const chatCtx = useContext(ChatContext);
-  
-    const [localAudioTrack, setLocalAudioTrack] = useState<any>(null);
-    const [localVideoTrack, setLocalVideoTrack] = useState<any>(null);
 
+    const localAudioTrackRef = useRef<any>(null);
+    const localVideoTrackRef = useRef<any>(null);
     const selfScreenRef = useRef(null);
     const smallScreenRef = useRef(null);
     
     const [isSmallSize, setIsSmallSize] = useState(false);  
-  
-    const APP_ID = process.env.NEXT_PUBLIC_AGORA_APP_ID!;
     const CHANNEL_NAME = `${chatCtx.roomId}-${chatCtx.nickname}-preparing-channel`;
   
     useEffect(() => {
       const joinChannel = async () => {
+        if (client.connectionState !== "DISCONNECTED") {
+          return 
+        }
+        
         await client.join(APP_ID, CHANNEL_NAME, null, null);
 
         const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
         const videoTrack = await AgoraRTC.createCameraVideoTrack();
   
-        setLocalAudioTrack(audioTrack);
-        setLocalVideoTrack(videoTrack);
+        localAudioTrackRef.current = audioTrack;
+        localVideoTrackRef.current = videoTrack;
   
-        if (selfScreenRef.current) {
-          videoTrack?.play(selfScreenRef.current);
-        }
+        buildVideo(window.innerWidth)
       };
   
       joinChannel();
     }, []);
-  
-    const handleResize = () => {
-        const screenWidth = window.innerWidth;
 
-        if (screenWidth < 1024) {
-            if (smallScreenRef.current) {
-                localVideoTrack?.play(smallScreenRef.current);
-            }
-            setIsSmallSize(true);
-        } else {
-            if (selfScreenRef.current) {
-                localVideoTrack?.play(selfScreenRef.current);
-            }
-            setIsSmallSize(false);
+    const buildVideo = (screenWidth: number) => {
+      if (screenWidth < 1024) {
+        if (smallScreenRef.current) {
+          localVideoTrackRef.current?.play(smallScreenRef.current);
         }
+        setIsSmallSize(true);
+    } else {
+        if (selfScreenRef.current) {
+          localVideoTrackRef.current?.play(selfScreenRef.current);
+        }
+        setIsSmallSize(false);
+    }
     }
 
     useEffect(() => {
-        window.addEventListener('resize', handleResize);
-
-        handleResize();
+        window.addEventListener("orientationchange", () => buildVideo(window.innerHeight));
 
         return () => {
-            window.removeEventListener('resize', handleResize);
-          };
-    }, [localVideoTrack]) 
+          window.removeEventListener('orientationchange', () => buildVideo(window.innerHeight));
+        };
+    }, []) 
 
     const prepared = async () => {
-      localAudioTrack?.close();
-      localVideoTrack?.close();
+      localAudioTrackRef.current?.close();
+      localVideoTrackRef.current?.close();
       client.leave();
 
       chatCtx.toggleMode("meeting")
     };
   
     const toggleSound = async () => {
-      await localAudioTrack.setEnabled(!chatCtx.isAudioEnabled);
+      await localAudioTrackRef.current.setEnabled(!chatCtx.isAudioEnabled);
       chatCtx.toggleIsAudioEnabled(! chatCtx.isAudioEnabled)
       toast.success(`Audio ${chatCtx.isAudioEnabled ? 'Muted' : 'Unmuted'}`, {
         position: 'top-center',
@@ -98,7 +95,7 @@ export default function VideoCallRoom() {
     };
   
     const toggleVideo = async () => {
-      await localVideoTrack.setEnabled(!chatCtx.isVideoEnabled);
+      await localVideoTrackRef.current.setEnabled(!chatCtx.isVideoEnabled);
       chatCtx.toggleIsVideoEnabled(! chatCtx.isVideoEnabled)
       toast.success(`Video ${chatCtx.isVideoEnabled ? 'Stopped' : 'Started'}`, {
         position: 'top-center',
@@ -125,14 +122,15 @@ export default function VideoCallRoom() {
           >
             Back to Chat
           </button>
-  
-            {isSmallSize && <div className="flex-1 w-full bg-stone-400 flex items-center justify-center shadow-inner rounded-lg">
-                <div
-                    className="rounded-lg w-full h-full bg-black"
-                    ref={smallScreenRef}
-                />
-            </div>}
-          
+          <div className={ isSmallSize 
+            ? "flex-1 w-full bg-stone-400 flex items-center justify-center shadow-inner rounded-lg"
+            : "hidden flex-1 w-full bg-stone-400 flex items-center justify-center shadow-inner rounded-lg"
+          }>
+              <div
+                  className="rounded-lg w-full h-full bg-black overflow-hidden"
+                  ref={smallScreenRef}
+              />
+          </div>
           <div className="bg-white bg-opacity-10 p-4 rounded-lg shadow-lg">
             <h3 className="text-center font-bold text-lg mb-4">Setting Up</h3>
             <div className="flex gap-4 justify-center">
@@ -153,12 +151,15 @@ export default function VideoCallRoom() {
         </div>
   
         {/* 右側：視訊畫面 */}
-        {! isSmallSize && <div className="flex-1 w-full lg:w-3/4 bg-stone-400 flex items-center justify-center shadow-inner">
+        <div className={isSmallSize
+          ? "hidden flex-1 w-full lg:w-3/4 bg-stone-400 flex items-center justify-center shadow-inner" 
+          : "flex-1 w-full lg:w-3/4 bg-stone-400 flex items-center justify-center shadow-inner"
+        }>
           <div
             className="rounded-lg w-3/4 h-3/4 bg-black overflow-hidden"
             ref={selfScreenRef}
           />
-        </div>}
+        </div>
         <ToastContainer autoClose={3000} />
       </div>
     );
