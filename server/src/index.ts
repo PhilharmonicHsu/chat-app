@@ -5,15 +5,7 @@ import {PrismaClient} from '@prisma/client'
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { 
-  cors: {
-    origin: "https://green-island-client-fafa8eeb56ee.herokuapp.com", // 替換為你的前端域名
-    methods: ["GET", "POST"],
-    allowedHeaders: ["Authorization", "Content-Type"],
-    credentials: true, // 如果需要帶上 Cookies 或其他憑證
-  },
-  transports: ["websocket"], // 強制只使用 WebSocket
-});
+const io = new Server(server, {cors: { origin: '*'}});
 const prisma = new PrismaClient()
 
 // 當前房間列表（可用資料庫替代）

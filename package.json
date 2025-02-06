@@ -21,6 +21,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.741.0",
     "@prisma/client": "^6.2.1",
+    "@supabase/supabase-js": "^2.48.1",
     "agora-rtc-react": "^2.3.0",
     "agora-rtc-sdk-ng": "^4.23.1",
     "aws-sdk": "^2.1692.0",
