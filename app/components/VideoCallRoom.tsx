@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState, useRef, useContext } from "react";
+import React, { useEffect, useState, useRef, useContext, useMemo } from "react";
 import Sidebar from '@components/Sidebar'
 import Button from '@components/Button'
 import {AudioIcon, AudioOffIcon, VideoIcon, VideoOffIcon} from '@components/icons'
@@ -23,7 +23,6 @@ interface IAgoraRTCRemoteUser {
   }
 
 export default function VideoCallRoom() {
-    console.log('VideoCallRoom')
     const APP_ID = process.env.NEXT_PUBLIC_AGORA_APP_ID!; // 替換為你的 Agora App ID
 
     const chatCtx = useContext(ChatContext);
@@ -102,7 +101,6 @@ export default function VideoCallRoom() {
     
             // 處理遠端用戶離開
             client.on("user-unpublished", (user, mediaType) => { 
-                console.log('user-unpublished', user, mediaType)
                 if (mediaType === "video") {
                     setRemoteUsers(prev => 
                         prev.map(remoteUser => remoteUser.uid === user.uid 
@@ -204,11 +202,11 @@ export default function VideoCallRoom() {
     }
   };
 
-  const userVideoBarClasses = () => {
+  const userVideoBarClasses = useMemo(() => {
     const classes = ['bg-gray-800', 'gap-2', 'items-center', 'p-2'];
 
     if (isSharingScreen) {
-        classes.push(...['h-auto', 'max-h-[200px]', 'w-auto', 'flex', 'overflow-x-scroll'])
+        classes.push(...['h-auto', 'max-h-[200px]', 'w-auto', 'flex', 'overflow-x-scroll']);
     } else {
         const userAmount = [...remoteUsers].filter(user => user.uid !== SCREEN_SHARE_UID).length + 1; // plus self
 
@@ -216,11 +214,19 @@ export default function VideoCallRoom() {
 
         cols = cols < 2 ? 2 : cols;
 
-        classes.push(...['flex-1', 'grid', `grid-cols-${cols}`, 'auto-rows-auto', 'overflow-y-auto'])
+        const colClasses = {
+          1: "grid-cols-1",
+          2: "grid-cols-2",
+          3: "grid-cols-3",
+          4: "grid-cols-4",
+        };
+
+        classes.push(...['flex-1', 'grid', colClasses[cols] || "grid-cols-2", 'auto-rows-auto', 'overflow-y-auto']);
     }
 
-    return classes.join(' ')
-  }
+    return classes.join(' ');
+}, [isSharingScreen, remoteUsers]);
+
 
   const userVideoClasses = () => {
     const classes = ['bg-gray-400', 'rounded-lg', 'overflow-hidden', 'aspect-video'];
@@ -291,7 +297,7 @@ export default function VideoCallRoom() {
             />
         </FullScreen>
         
-        <div className={userVideoBarClasses()}>
+        <div className={userVideoBarClasses}>
             {[...remoteUsers].filter(user => user.uid !== SCREEN_SHARE_UID).map(user => (
                 <div
                 key={user.uid}

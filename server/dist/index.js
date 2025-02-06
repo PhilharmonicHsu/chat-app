@@ -10,7 +10,6 @@ const prisma = new PrismaClient();
 const rooms = {};
 // Socket.IO 配置
 io.on("connection", (socket) => {
-    console.log("User connected:", socket.id);
     // 創建房間
     socket.on("createRoom", async (callback) => {
         const room = await prisma.room.create({

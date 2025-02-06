@@ -5,7 +5,6 @@ import { RecursivePartial, Options } from "tsparticles-engine";
 
 export default function DynamicBackground() {
     const particlesInit = useCallback(async (engine) => {
-        console.log(engine)
         await loadFull(engine);
       }, []);
 

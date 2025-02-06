@@ -62,7 +62,7 @@ export default function ChatRoom() {
         console.error(response.error);
       }
     });
-  }, [chatCtx, decrypted, router]);
+  }, [chatCtx, decrypted.roomId, router]);
 
   useEffect(() => {
     socket.on("message", (pack) => {
@@ -142,7 +142,8 @@ export default function ChatRoom() {
 
   // 按鈕點擊後複製連結
   const handleCopyLink = () => {
-    const link = `${process.env.NEXT_PUBLIC_BASE_URL}/chat/${inviteLink}`;
+    const currentDomain = `${window.location.protocol}//${window.location.host}`;
+    const link = `${currentDomain}/chat/${inviteLink}`;
 
     navigator.clipboard.writeText(link).then(() => {
       toast.success("Copied!", {

@@ -13,8 +13,6 @@ const rooms: Record<string, string[]> = {};
 
 // Socket.IO 配置
 io.on("connection", (socket: Socket) => {
-  console.log("User connected:", socket.id);
-
   // 創建房間
   socket.on("createRoom", async (callback) => {
     const room = await prisma.room.create({
@@ -48,7 +46,6 @@ io.on("connection", (socket: Socket) => {
 
   // 斷開連接
   socket.on("disconnect", () => {
-    console.log("User disconnected:", socket.id);
     // 可在此處處理用戶從房間中移除的邏輯
   });
 });
