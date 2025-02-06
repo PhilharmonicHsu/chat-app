@@ -29,11 +29,11 @@ export default function VideoCallRoom() {
     const chatCtx = useContext(ChatContext);
     const CHANNEL_NAME = chatCtx.roomId; 
 
-    const localAudioTrackRef = useRef<any>(null);
-    const localVideoTrackRef = useRef<any>(null);
+    const localAudioTrackRef = useRef(null);
+    const localVideoTrackRef = useRef(null);
     const selfScreenRef = useRef(null);
     const sharingScreenRef = useRef(null);
-    const localScreenShareTrackRef = useRef<any>(null)
+    const localScreenShareTrackRef = useRef(null)
 
     const [screenClient, setScreenClient] = useState<IAgoraRTCClient | null>(null);
     const [remoteUsers, setRemoteUsers] = useState<IAgoraRTCRemoteUser[]>([]);
@@ -42,120 +42,122 @@ export default function VideoCallRoom() {
     const handle = useFullScreenHandle();
 
     useEffect(() => {
-        joinChannel()
-    }, []);
-
-    const joinChannel = async () => {
-        if (client.connectionState !== "DISCONNECTED") {
-            return;
-        }
-
-        await client.join(APP_ID, CHANNEL_NAME, null, null);
-        
-        const tracks = [];
-        const audioTrack = await AgoraRTC.createMicrophoneAudioTrack(); // create audio stream
-        localAudioTrackRef.current = audioTrack;
-        tracks.push(audioTrack)
-        
-        const videoTrack = await AgoraRTC.createCameraVideoTrack(); // create video stream
-        localVideoTrackRef.current = videoTrack
-        tracks.push(videoTrack)
-
-        await client.publish(tracks);
+        const joinChannel = async () => {
+            if (client.connectionState !== "DISCONNECTED") {
+                return;
+            }
     
-        if (selfScreenRef.current) {
-            videoTrack?.play(selfScreenRef.current)
-        }
-
-        await videoTrack.setEnabled(chatCtx.isVideoEnabled);
-        await audioTrack.setEnabled(chatCtx.isAudioEnabled);
-
-        // 更新遠端用戶
-        client.on("user-published", async (user, mediaType) => {                        
-            await client.subscribe(user, mediaType);
+            await client.join(APP_ID, CHANNEL_NAME, null, null);
             
-            if (mediaType === 'video') {
-                // before get videoTrack, we need to subscribe
-                setRemoteUsers(prev => {
-                    const targetRemoteUser = prev.find(remoteUser => remoteUser.uid === user.uid);
-                    if (targetRemoteUser) {
-                        targetRemoteUser.videoTrack = user.videoTrack
-
-                        return prev.map(remoteUser => remoteUser.uid === targetRemoteUser.uid 
-                            ? targetRemoteUser
+            const tracks = [];
+            const audioTrack = await AgoraRTC.createMicrophoneAudioTrack(); // create audio stream
+            localAudioTrackRef.current = audioTrack;
+            tracks.push(audioTrack)
+            
+            const videoTrack = await AgoraRTC.createCameraVideoTrack(); // create video stream
+            localVideoTrackRef.current = videoTrack
+            tracks.push(videoTrack)
+    
+            await client.publish(tracks);
+        
+            if (selfScreenRef.current) {
+                videoTrack?.play(selfScreenRef.current)
+            }
+    
+            await videoTrack.setEnabled(chatCtx.isVideoEnabled);
+            await audioTrack.setEnabled(chatCtx.isAudioEnabled);
+    
+            // 更新遠端用戶
+            client.on("user-published", async (user, mediaType) => {                        
+                await client.subscribe(user, mediaType);
+                
+                if (mediaType === 'video') {
+                    // before get videoTrack, we need to subscribe
+                    setRemoteUsers(prev => {
+                        const targetRemoteUser = prev.find(remoteUser => remoteUser.uid === user.uid);
+                        if (targetRemoteUser) {
+                            targetRemoteUser.videoTrack = user.videoTrack
+    
+                            return prev.map(remoteUser => remoteUser.uid === targetRemoteUser.uid 
+                                ? targetRemoteUser
+                                : remoteUser
+                            )
+                        } else {
+                            return [
+                                ...prev,
+                                { uid: user.uid, videoTrack: user.videoTrack, audioTrack: null}
+                            ]
+                        }
+                    })
+    
+                    if (user.uid === SCREEN_SHARE_UID) {
+                        setIsSharingScreen(true);  
+    
+                        if (sharingScreenRef.current) {
+                            user.videoTrack?.play(sharingScreenRef.current)
+                        }
+                    } 
+                }
+            });
+    
+            // 處理遠端用戶離開
+            client.on("user-unpublished", (user, mediaType) => { 
+                console.log('user-unpublished', user, mediaType)
+                if (mediaType === "video") {
+                    setRemoteUsers(prev => 
+                        prev.map(remoteUser => remoteUser.uid === user.uid 
+                            ? { ...remoteUser, videoTrack: null }
                             : remoteUser
                         )
-                    } else {
-                        return [
-                            ...prev,
-                            { uid: user.uid, videoTrack: user.videoTrack, audioTrack: null}
-                        ]
-                    }
-                })
-
-                if (user.uid === SCREEN_SHARE_UID) {
-                    setIsSharingScreen(true);  
-
-                    if (sharingScreenRef.current) {
-                        user.videoTrack?.play(sharingScreenRef.current)
-                    }
-                } 
-            }
-        });
-
-        // 處理遠端用戶離開
-        client.on("user-unpublished", (user, mediaType) => { 
-            console.log('user-unpublished', user, mediaType)
-            if (mediaType === "video") {
-                setRemoteUsers(prev => 
-                    prev.map(remoteUser => remoteUser.uid === user.uid 
-                        ? { ...remoteUser, videoTrack: null }
-                        : remoteUser
-                    )
-                );
-
-                if (user.uid === SCREEN_SHARE_UID) {
-                    setIsSharingScreen(false);  
+                    );
     
-                    if (sharingScreenRef.current) {
-                        user.videoTrack?.close();
-                    }
-                } 
-            } else {
-                setRemoteUsers(prev => 
-                    prev.map(remoteUser => remoteUser.uid === user.uid 
-                        ? { ...remoteUser, audioTrack: null }
-                        : remoteUser
-                    )
-                );
+                    if (user.uid === SCREEN_SHARE_UID) {
+                        setIsSharingScreen(false);  
+        
+                        if (sharingScreenRef.current) {
+                            user.videoTrack?.stop();
+                        }
+                    } 
+                } else {
+                    setRemoteUsers(prev => 
+                        prev.map(remoteUser => remoteUser.uid === user.uid 
+                            ? { ...remoteUser, audioTrack: null }
+                            : remoteUser
+                        )
+                    );
+                }
+            });
+    
+            client.on("user-left", (user) => { 
+                setRemoteUsers(prev => prev.filter(remoteUser => remoteUser.uid !== user.uid));
+            });
+    
+            // Subscribe to the videos of users who already exist in this channel
+            for (const user of client.remoteUsers) {
+                await client.subscribe(user, "video"); // subscribe video stream
+                await client.subscribe(user, "audio"); // subscribe audio stream
+    
+                setRemoteUsers((prev) => [
+                    ...prev, 
+                    { uid: user.uid, videoTrack: user.videoTrack, audioTrack: user.audioTrack }
+                ]);
             }
-        });
-
-        client.on("user-left", (user, mediaType) => { 
-            setRemoteUsers(prev => prev.filter(remoteUser => remoteUser.uid !== user.uid));
-        });
-
-        // Subscribe to the videos of users who already exist in this channel
-        for (const user of client.remoteUsers) {
-            await client.subscribe(user, "video"); // subscribe video stream
-            await client.subscribe(user, "audio"); // subscribe audio stream
-
-            setRemoteUsers((prev) => [
-                ...prev, 
-                { uid: user.uid, videoTrack: user.videoTrack, audioTrack: user.audioTrack }
-            ]);
-        }
-
-        const screenSharinigUser = client.remoteUsers.find(user => user.uid === SCREEN_SHARE_UID);
-
-        if (screenSharinigUser) {
-            await client.subscribe(screenSharinigUser, "video"); // subscribe video stream
-
-            if (sharingScreenRef.current) {
-                screenSharinigUser.videoTrack?.play(sharingScreenRef.current)
+    
+            const screenSharinigUser = client.remoteUsers.find(user => user.uid === SCREEN_SHARE_UID);
+    
+            if (screenSharinigUser) {
+                await client.subscribe(screenSharinigUser, "video"); // subscribe video stream
+    
+                if (sharingScreenRef.current) {
+                    screenSharinigUser.videoTrack?.play(sharingScreenRef.current)
+                }
             }
-        }
-  };
+        };
+
+        joinChannel()
+    }, [APP_ID, CHANNEL_NAME, chatCtx.isAudioEnabled, chatCtx.isVideoEnabled]);
+
+    
 
     const leavingChannel = async () => {
         localAudioTrackRef.current?.close();

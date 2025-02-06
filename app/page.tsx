@@ -8,8 +8,9 @@ import DynamicBackground from "@components/DynamicBackground";
 
 export default function HomePage() {
   const router = useRouter();
-  const socket = io("http://localhost:3001");
-  
+  const socket = io(process.env.NEXT_PUBLIC_BASE_URL, {
+    transports: ["websocket"], // 明確僅使用 WebSocket
+  });
   const handleCreateRoom = () => {
     try {
       socket.emit("createRoom", (roomId: string) => {

@@ -5,7 +5,7 @@ import {PrismaClient} from '@prisma/client'
 
 const app: Express = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+const io = new Server(server, { cors: { origin: "*" }, transports: ["websocket"] });
 const prisma = new PrismaClient()
 
 // 當前房間列表（可用資料庫替代）
@@ -53,8 +53,8 @@ io.on("connection", (socket: Socket) => {
   });
 });
 
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 server.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Server running on ${process.env.NEXT_PUBLIC_BASE_URL}:${PORT}`);
 });

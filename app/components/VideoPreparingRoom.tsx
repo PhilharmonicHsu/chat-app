@@ -15,8 +15,8 @@ const APP_ID = process.env.NEXT_PUBLIC_AGORA_APP_ID!;
 export default function VideoCallRoom() {
     const chatCtx = useContext(ChatContext);
 
-    const localAudioTrackRef = useRef<any>(null);
-    const localVideoTrackRef = useRef<any>(null);
+    const localAudioTrackRef = useRef(null);
+    const localVideoTrackRef = useRef(null);
     const selfScreenRef = useRef(null);
     const smallScreenRef = useRef(null);
     
@@ -41,7 +41,7 @@ export default function VideoCallRoom() {
       };
   
       joinChannel();
-    }, []);
+    }, [CHANNEL_NAME]);
 
     const buildVideo = (screenWidth: number) => {
       if (screenWidth < 1024) {

@@ -7,15 +7,19 @@ import { useState, useEffect } from "react";
 import ChatContextProvider from '@context/ChatContextProvider'
 import Lobby from "@components/Lobby";
 
+type UrlParams = {
+  encrypted: string;
+};
+
 export default function RoomPage() {
-  const { encrypted } = useParams()
+  const { encrypted } = useParams<UrlParams>()
   const [roomId, setRoomId] = useState<string>("");
 
   const decrypted: {roomId: string, nickname?: string} = decryptData(encrypted);
 
   useEffect(() => {
     setRoomId(decrypted.roomId);
-  }, [])
+  }, [decrypted.roomId])
 
   if (! decrypted.nickname) {
     return <Lobby roomId={roomId} />;

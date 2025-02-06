@@ -10,7 +10,7 @@ export function encryptData(data: object): string {
 }
 
 // 解密
-export function decryptData(encryptedData: string): {roomId: string, nickname?: string} {
+export function decryptData(encryptedData): {roomId: string, nickname?: string} {
   try {
     const decrypted = CryptoJS.AES.decrypt(
       decodeURIComponent(encryptedData),

@@ -1,19 +1,9 @@
 {
   "extends": "../tsconfig.json",
   "compilerOptions": {
-    "target": "ESNext",                // 支援現代 Node.js 特性
-    "module": "CommonJS",              // 使用 CommonJS 模塊（Node.js 默認）
-    "rootDir": "src",                   // 原始碼的根目錄
-    "outDir": "dist",                // 編譯後文件的輸出目錄
-    "baseUrl": ".",                    // 設置相對路徑基準
-    "paths": {
-      "@config/*": ["config/*"],
-      "@controllers/*": ["controllers/*"],
-      "@services/*": ["services/*"],
-      "@models/*": ["models/*"],
-      "@utils/*": ["utils/*"]
-    }
+    "outDir": "dist", // 編譯輸出目錄
+    "rootDir": "src" // 原始檔案目錄
   },
-  "include": ["**/*"],                 // 包含所有文件
-  "exclude": ["node_modules", "dist"] // 排除編譯目錄和依賴
+  "include": ["src/*.ts"], // 包含的檔案
+  "exclude": ["node_modules"] // 排除的檔案
 }

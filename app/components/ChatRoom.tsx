@@ -23,8 +23,11 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Sidebar from '@components/Sidebar'
 import Button from '@components/Button'
+import Image from "next/image";
 
-const socket = io("http://localhost:3001");
+const socket = io(process.env.NEXT_PUBLIC_BASE_URL, {
+  transports: ["websocket"], // 明確僅使用 WebSocket
+});
 
 export default function ChatRoom() {
   const router = useRouter();
@@ -54,12 +57,12 @@ export default function ChatRoom() {
     chatCtx.toggleNickname(decrypted.nickname)
     setInviteLink(encryptData({roomId: decrypted.roomId}))
 
-    socket.emit("joinRoom", decrypted.roomId, "Anonymous", (response: any) => {
+    socket.emit("joinRoom", decrypted.roomId, "Anonymous", (response) => {
       if (response.error) {
         console.error(response.error);
       }
     });
-  }, []);
+  }, [chatCtx, decrypted, router]);
 
   useEffect(() => {
     socket.on("message", (pack) => {
@@ -77,7 +80,7 @@ export default function ChatRoom() {
       socket.off("message");
       socket.emit("leaveRoom", chatCtx.roomId);
     };
-  }, [chatCtx.roomId]);
+  }, [chatCtx.roomId, chatCtx.nickname]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMessage(e.target.value);
@@ -139,7 +142,7 @@ export default function ChatRoom() {
 
   // 按鈕點擊後複製連結
   const handleCopyLink = () => {
-    const link = `${window.location.origin}/chat/${inviteLink}`;
+    const link = `${process.env.NEXT_PUBLIC_BASE_URL}/chat/${inviteLink}`;
 
     navigator.clipboard.writeText(link).then(() => {
       toast.success("Copied!", {
@@ -157,10 +160,10 @@ export default function ChatRoom() {
     setSelectedImages((prev) => prev.filter((_, i) => i !== index));
   }
 
-  const { getRootProps, getInputProps } = useDropzone({ onDrop, accept: "image/*" });
+  const { getRootProps, getInputProps } = useDropzone({ onDrop, accept: {"image/*": []} });
 
   const renderers = {
-    code({ node, inline, className, children, ...props }: any) {
+    code({ inline, className, children, ...props }) {
       const match = /language-(\w+)/.exec(className || "");
       const language = match?.[1] || "plaintext";
 
@@ -177,7 +180,7 @@ export default function ChatRoom() {
         <code className="bg-gray-200 px-2 py-1 rounded">{children}</code>
       );
     },
-    p: ({ node, children, ...props }) => {
+    p: ({ children, ...props }) => {
       return <span className="inline-block text-black bg-white text-xl px-2 py-1 rounded-md border border-solid border-black" {...props}>
         {children}
       </span>
@@ -261,7 +264,7 @@ export default function ChatRoom() {
                     {msg.content}
                   </ReactMarkdown>
                 ) : (
-                  <img 
+                  <Image 
                     src={msg.content} alt="uploaded" 
                     className="max-w-xs rounded-lg shadow-md border border-solid border-black"
                   />                  
@@ -274,7 +277,7 @@ export default function ChatRoom() {
           <div className={selectedImages.length === 0 ? "flex gap-6 overflow-x-auto bg-gray-200" : "flex gap-6 overflow-x-auto p-6 bg-gray-200"}>
             {selectedImages.map((file, index) => (
               <div key={index} className="relative w-24 h-24">
-                <img
+                <Image
                   src={URL.createObjectURL(file)}
                   alt={`preview-${index}`}
                   className="w-full h-full object-cover rounded-lg shadow-md"
