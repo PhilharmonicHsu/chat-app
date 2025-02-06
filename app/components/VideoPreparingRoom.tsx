@@ -2,27 +2,14 @@
 
 import React, { useEffect, useState, useRef, useContext } from "react";
 import AgoraRTC from "agora-rtc-sdk-ng";
-import { ChatContext } from "app/context/ChatContextProvider";
-import SoundIcon from "./icons/SoundIcon";
-import SoundOffIcon from "./icons/SoundOffIcon"
-import VideoIcon from "./icons/VideoIcon";
-import VideoOffIcon from "./icons/VideoOffIcon";
+import { ChatContext } from "@context/ChatContextProvider";
+import {AudioIcon, AudioOffIcon, VideoIcon, VideoOffIcon} from "@components/icons"
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-AgoraRTC.setLogLevel(2); // 關閉所有日誌
+AgoraRTC.setLogLevel(2); // close all of the logs
 
 const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
-
-/**
- * todo: 
- * 1. 增加準備進入視訊通話的畫面
- * 2. 建立 Context 控制狀態，儲存返回聊天室的URL - done
- * 3. 開啟分享螢幕模式之後，頻道內視訊列表會重新排列
- * 4. 每個 video tag 應該都要可以有放大到全螢幕的效果
- * 5. 實作離開頻道與結束螢幕分享的邏輯
- */
-
 const APP_ID = process.env.NEXT_PUBLIC_AGORA_APP_ID!;
 
 export default function VideoCallRoom() {
@@ -138,7 +125,7 @@ export default function VideoCallRoom() {
                 className="bg-white p-4 rounded-md shadow-md hover:shadow-lg hover:scale-105 transition"
                 onClick={toggleSound}
               >
-                {chatCtx.isAudioEnabled ? <SoundIcon /> : <SoundOffIcon />}
+                {chatCtx.isAudioEnabled ? <AudioIcon /> : <AudioOffIcon />}
               </button>
               <button
                 className="bg-white p-4 rounded-md shadow-md hover:shadow-lg hover:scale-105 transition"

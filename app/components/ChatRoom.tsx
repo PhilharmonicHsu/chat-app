@@ -3,7 +3,7 @@
 import { useState, useEffect, useContext } from "react";
 import { useRouter } from "next/navigation";
 import { encryptData, decryptData } from "@utils/crypto";
-import { FaCode } from "react-icons/fa";
+import { FaCode, FaHome } from "react-icons/fa";
 import { GoImage } from "react-icons/go";
 import { FiSend } from "react-icons/fi";
 import { MdClose } from "react-icons/md";
@@ -16,13 +16,13 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { atomDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { useParams } from "next/navigation";
 import { io } from "socket.io-client";
-import VideoCallRoom from "./VideoCallRoom";
-import VideoPreparingRoom from "./VideoPreparingRoom";
-import { ChatContext } from "app/context/ChatContextProvider";
+import VideoCallRoom from "@components/VideoCallRoom";
+import VideoPreparingRoom from "@components/VideoPreparingRoom";
+import { ChatContext, Mode } from "@context/ChatContextProvider";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import Sidebar from './Sidebar'
-import Button from './Button'
+import Sidebar from '@components/Sidebar'
+import Button from '@components/Button'
 
 const socket = io("http://localhost:3001");
 
@@ -188,6 +188,10 @@ export default function ChatRoom() {
     chatCtx.toggleMode("preparing")
   }
 
+  const handleBackToHome = () => {
+    router.push('/')
+  }
+
   const messageClass = (index: number, type: string, nickname: string): string => {
     const classes = ["mb-2"]
     if (index !== 0) {
@@ -212,7 +216,7 @@ export default function ChatRoom() {
     return classes.join(" ")
   }
 
-  if (chatCtx.mode === "chat") {
+  if (chatCtx.mode === Mode.CHAT) {
     return (
       <div className="flex h-screen">
         
@@ -232,6 +236,13 @@ export default function ChatRoom() {
           >
             <IoVideocamOutline className="w-6 h-6" />
             Start Meeting
+          </Button>
+          <Button 
+            color="green"
+            onClick={handleBackToHome}
+          >
+            <FaHome className="w-6 h-6" />
+            Home
           </Button>
         </Sidebar>
   
@@ -310,11 +321,11 @@ export default function ChatRoom() {
     );
   }
   
-  if (chatCtx.mode === "meeting" && chatCtx.roomId !== '') {
+  if (chatCtx.mode === Mode.MEETING && chatCtx.roomId !== '') {
     return <VideoCallRoom />
   }
 
-  if (chatCtx.mode === "preparing") {
+  if (chatCtx.mode === Mode.PREPARING) {
     return <VideoPreparingRoom />
   }
 }

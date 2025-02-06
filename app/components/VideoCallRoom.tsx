@@ -1,24 +1,26 @@
 'use client'
 
 import React, { useEffect, useState, useRef, useContext } from "react";
-import Sidebar from './Sidebar'
-import Button from './Button'
-import SoundIcon from "./icons/SoundIcon";
-import SoundOffIcon from "./icons/SoundOffIcon"
-import VideoIcon from "./icons/VideoIcon";
-import VideoOffIcon from "./icons/VideoOffIcon";
+import Sidebar from '@components/Sidebar'
+import Button from '@components/Button'
+import {AudioIcon, AudioOffIcon, VideoIcon, VideoOffIcon} from '@components/icons'
 import { MdOutlineFitScreen } from "react-icons/md";
 import { FaDoorOpen } from "react-icons/fa6";
 import { FullScreen, useFullScreenHandle } from "react-full-screen";
 import './screen-share.scss'
-import AgoraRTC, { IAgoraRTCClient, IAgoraRTCRemoteUser } from "agora-rtc-sdk-ng";
-import { ChatContext } from "app/context/ChatContextProvider";
+import AgoraRTC, { IAgoraRTCClient, IRemoteVideoTrack } from "agora-rtc-sdk-ng";
+import { ChatContext } from "@context/ChatContextProvider";
 
 AgoraRTC.setLogLevel(2); // close all of the logs
 
 const SCREEN_SHARE_UID = 1;
 
 const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+
+interface IAgoraRTCRemoteUser {
+    uid: string | number;
+    videoTrack?: IRemoteVideoTrack | null;
+  }
 
 export default function VideoCallRoom() {
     console.log('VideoCallRoom')
@@ -195,7 +197,7 @@ export default function VideoCallRoom() {
         await client.unpublish(localScreenShareTrackRef.current);
         localScreenShareTrackRef.current?.close();
 
-        screenClient.leave();
+        screenClient?.leave();
         setIsSharingScreen(false);
     }
   };
@@ -232,11 +234,10 @@ export default function VideoCallRoom() {
   return (
     <div className="relative flex w-full h-screen">
         <Sidebar>
-            <h2 className="text-lg font-bold mb-4">房間資訊</h2>
             <ul>
-            {remoteUsers.map((user) => (
-                <li key={user.uid}>用戶 {user.uid}</li>
-            ))}
+                {remoteUsers.map((user) => (
+                    <li key={user.uid}>用戶 {user.uid}</li>
+                ))}
             </ul>
             <div className="flex flex-col gap-4">
                 <Button 
@@ -267,7 +268,7 @@ export default function VideoCallRoom() {
                             color="white"
                             onClick={toggleAudio}
                         >
-                            {chatCtx.isAudioEnabled ? <SoundIcon /> : <SoundOffIcon />}
+                            {chatCtx.isAudioEnabled ? <AudioIcon /> : <AudioOffIcon />}
                         </Button>
                     </div>
                 </div>

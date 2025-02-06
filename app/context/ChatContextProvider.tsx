@@ -1,5 +1,10 @@
 import {createContext, useState} from 'react'
 
+export enum Mode {
+    CHAT = 'chat',
+    MEETING = 'meeting',
+    PREPARING = 'preparing'
+}
 
 // 定義 Context 類型
 interface ChatContextType {
@@ -16,7 +21,7 @@ interface ChatContextType {
 }
 
 export const ChatContext = createContext<ChatContextType>({
-    mode: 'chat',
+    mode: Mode.CHAT,
     toggleMode: () => {},
     nickname: '',
     toggleNickname: () => {},
@@ -29,7 +34,7 @@ export const ChatContext = createContext<ChatContextType>({
 });
 
 export default function ChatContextProvider({children}) {
-    const [mode, setMode] = useState('chat');
+    const [mode, setMode] = useState<string>(Mode.CHAT);
     const [nickname, setNickname] = useState('');
     const [isAudioEnabled, setIsAudioEnabled] = useState(true);
     const [isVideoEnabled, setIsVideoEnabled] = useState(true);
