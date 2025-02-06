@@ -48,7 +48,8 @@
     "sass": "^1.83.4",
     "socket.io-client": "^4.8.1",
     "ts-node": "^10.9.2",
-    "tsparticles": "^2.12.0"
+    "tsparticles": "^2.12.0",
+    "wscat": "^6.0.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

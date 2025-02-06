@@ -25,7 +25,7 @@ import Sidebar from '@components/Sidebar'
 import Button from '@components/Button'
 import Image from "next/image";
 
-const socket = io(process.env.NEXT_PUBLIC_BASE_URL, {
+const socket = io(process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3001", {
   transports: ["websocket"], // 明確僅使用 WebSocket
 });
 
