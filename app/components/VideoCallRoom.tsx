@@ -11,41 +11,31 @@ import { MdOutlineFitScreen } from "react-icons/md";
 import { FaDoorOpen } from "react-icons/fa6";
 import { FullScreen, useFullScreenHandle } from "react-full-screen";
 import './screen-share.scss'
-
-
-import AgoraRTC from "agora-rtc-sdk-ng";
+import AgoraRTC, { IAgoraRTCClient, IAgoraRTCRemoteUser } from "agora-rtc-sdk-ng";
 import { ChatContext } from "app/context/ChatContextProvider";
 
-AgoraRTC.setLogLevel(2); // 關閉所有日誌
+AgoraRTC.setLogLevel(2); // close all of the logs
 
 const SCREEN_SHARE_UID = 1;
 
 const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
 
-/**
- * todo: 
- * 1. 增加準備進入視訊通話的畫面
- * 2. 建立 Context 控制狀態，儲存返回聊天室的URL - done
- * 3. 開啟分享螢幕模式之後，頻道內視訊列表會重新排列
- * 4. 每個 video tag 應該都要可以有放大到全螢幕的效果
- * 5. 實作離開頻道與結束螢幕分享的邏輯
- */
 export default function VideoCallRoom() {
-    const chatCtx = useContext(ChatContext);
+    console.log('VideoCallRoom')
+    const APP_ID = process.env.NEXT_PUBLIC_AGORA_APP_ID!; // 替換為你的 Agora App ID
 
-    const [localAudioTrack, setLocalAudioTrack] = useState<any>(null);
-    const [localVideoTrack, setLocalVideoTrack] = useState<any>(null);
-    const [localScreenShareTrack, setLocalScreenShareTrack] = useState<any>(null)
-    const [screenClient, setScreenClient] = useState<any>(null);
-    const [remoteUsers, setRemoteUsers] = useState<any[]>([]);
-    const [isSharingScreen, setIsSharingScreen] = useState(false);
+    const chatCtx = useContext(ChatContext);
+    const CHANNEL_NAME = chatCtx.roomId; 
+
+    const localAudioTrackRef = useRef<any>(null);
+    const localVideoTrackRef = useRef<any>(null);
     const selfScreenRef = useRef(null);
     const sharingScreenRef = useRef(null);
-    const [isAudioEnable, setIsAudioEnable] = useState(true);
-    const [isVideoEnable, setIsVideoEnable] = useState(true);
+    const localScreenShareTrackRef = useRef<any>(null)
 
-    const APP_ID = process.env.NEXT_PUBLIC_AGORA_APP_ID!; // 替換為你的 Agora App ID
-    const CHANNEL_NAME = chatCtx.roomId; 
+    const [screenClient, setScreenClient] = useState<IAgoraRTCClient | null>(null);
+    const [remoteUsers, setRemoteUsers] = useState<IAgoraRTCRemoteUser[]>([]);
+    const [isSharingScreen, setIsSharingScreen] = useState(false);
 
     const handle = useFullScreenHandle();
 
@@ -54,16 +44,19 @@ export default function VideoCallRoom() {
     }, []);
 
     const joinChannel = async () => {
-    // 加入頻道
-        const uid = await client.join(APP_ID, CHANNEL_NAME, null, null);
+        if (client.connectionState !== "DISCONNECTED") {
+            return;
+        }
+
+        await client.join(APP_ID, CHANNEL_NAME, null, null);
         
         const tracks = [];
-        const audioTrack = await AgoraRTC.createMicrophoneAudioTrack(); // 創建音頻
-        setLocalAudioTrack(audioTrack);
+        const audioTrack = await AgoraRTC.createMicrophoneAudioTrack(); // create audio stream
+        localAudioTrackRef.current = audioTrack;
         tracks.push(audioTrack)
         
-        const videoTrack = await AgoraRTC.createCameraVideoTrack(); // 創建視頻
-        setLocalVideoTrack(videoTrack);
+        const videoTrack = await AgoraRTC.createCameraVideoTrack(); // create video stream
+        localVideoTrackRef.current = videoTrack
         tracks.push(videoTrack)
 
         await client.publish(tracks);
@@ -71,6 +64,9 @@ export default function VideoCallRoom() {
         if (selfScreenRef.current) {
             videoTrack?.play(selfScreenRef.current)
         }
+
+        await videoTrack.setEnabled(chatCtx.isVideoEnabled);
+        await audioTrack.setEnabled(chatCtx.isAudioEnabled);
 
         // 更新遠端用戶
         client.on("user-published", async (user, mediaType) => {                        
@@ -137,10 +133,10 @@ export default function VideoCallRoom() {
             setRemoteUsers(prev => prev.filter(remoteUser => remoteUser.uid !== user.uid));
         });
 
-        // 訂閱該頻道內已存在的用戶的視頻
+        // Subscribe to the videos of users who already exist in this channel
         for (const user of client.remoteUsers) {
-            await client.subscribe(user, "video"); // 訂閱視頻流
-            await client.subscribe(user, "audio"); // 訂閱音頻流
+            await client.subscribe(user, "video"); // subscribe video stream
+            await client.subscribe(user, "audio"); // subscribe audio stream
 
             setRemoteUsers((prev) => [
                 ...prev, 
@@ -149,8 +145,9 @@ export default function VideoCallRoom() {
         }
 
         const screenSharinigUser = client.remoteUsers.find(user => user.uid === SCREEN_SHARE_UID);
+
         if (screenSharinigUser) {
-            await client.subscribe(screenSharinigUser, "video"); // 訂閱視頻流
+            await client.subscribe(screenSharinigUser, "video"); // subscribe video stream
 
             if (sharingScreenRef.current) {
                 screenSharinigUser.videoTrack?.play(sharingScreenRef.current)
@@ -159,16 +156,23 @@ export default function VideoCallRoom() {
   };
 
     const leavingChannel = async () => {
-        localAudioTrack?.close();
-        localVideoTrack?.close();
+        localAudioTrackRef.current?.close();
+        localVideoTrackRef.current?.close();
         client.leave();
         chatCtx.toggleMode("chat")
     }
 
     const toggleVideo = async () => {
-        if (localVideoTrack) {
-            await localVideoTrack.setEnabled(! isVideoEnable);
-            setIsVideoEnable(! isVideoEnable);
+        if (localVideoTrackRef.current) {
+            await localVideoTrackRef.current.setEnabled(! chatCtx.isVideoEnabled);
+            chatCtx.toggleIsVideoEnabled(! chatCtx.isVideoEnabled);
+        }
+    }
+
+    const toggleAudio = async () => {
+        if (localAudioTrackRef.current) {
+            await localAudioTrackRef.current.setEnabled(! chatCtx.isAudioEnabled);
+            chatCtx.toggleIsAudioEnabled(! chatCtx.isAudioEnabled);
         }
     }
 
@@ -183,12 +187,13 @@ export default function VideoCallRoom() {
 
         await screenClient.publish(screenTrack);
 
-        setLocalScreenShareTrack(screenTrack);
+        localScreenShareTrackRef.current = screenTrack;
+
         setScreenClient(screenClient);
         setIsSharingScreen(true);      
     } else {        
-        await client.unpublish(localScreenShareTrack);
-        localScreenShareTrack?.close();
+        await client.unpublish(localScreenShareTrackRef.current);
+        localScreenShareTrackRef.current?.close();
 
         screenClient.leave();
         setIsSharingScreen(false);
@@ -226,48 +231,48 @@ export default function VideoCallRoom() {
 
   return (
     <div className="relative flex w-full h-screen">
-    <Sidebar>
-        <h2 className="text-lg font-bold mb-4">房間資訊</h2>
-        <ul>
-          {remoteUsers.map((user) => (
-            <li key={user.uid}>用戶 {user.uid}</li>
-          ))}
-        </ul>
-        <div className="flex flex-col gap-4">
-            <Button 
-                color="blue"
-                onClick={leavingChannel}
-            >
-                <FaDoorOpen />
-                Leaving Room 
-            </Button>
-            <Button
-                color="blue"
-                onClick={toggleScreenShare}
-            >
-                <MdOutlineFitScreen />
-                {isSharingScreen ? "Stop sharing" : "share screen"}
-            </Button>
+        <Sidebar>
+            <h2 className="text-lg font-bold mb-4">房間資訊</h2>
+            <ul>
+            {remoteUsers.map((user) => (
+                <li key={user.uid}>用戶 {user.uid}</li>
+            ))}
+            </ul>
+            <div className="flex flex-col gap-4">
+                <Button 
+                    color="red"
+                    onClick={leavingChannel}
+                >
+                    <FaDoorOpen />
+                    Leaving Room 
+                </Button>
+                <Button
+                    color="blue"
+                    onClick={toggleScreenShare}
+                >
+                    <MdOutlineFitScreen />
+                    {isSharingScreen ? "Stop sharing" : "Share screen"}
+                </Button>
 
-            <div className="bg-white bg-opacity-10 p-4 rounded-lg shadow-lg">
-                <h3 className="text-center font-bold text-lg mb-4">Setting Up</h3>
-                <div className="flex gap-4 justify-center">
-                    <Button
-                        color="white"
-                        onClick={toggleVideo}
-                    >
-                        {isVideoEnable ? <VideoIcon /> : <VideoOffIcon />}
-                    </Button>
-                    <Button
-                        color="white"
-                        onClick={() => setIsAudioEnable(!isAudioEnable)}
-                    >
-                        {isAudioEnable ? <SoundIcon /> : <SoundOffIcon />}
-                    </Button>
+                <div className="bg-white bg-opacity-10 p-4 rounded-lg shadow-lg">
+                    <h3 className="text-center font-bold text-lg mb-4">Setting Up</h3>
+                    <div className="flex gap-4 justify-center">
+                        <Button
+                            color="white"
+                            onClick={toggleVideo}
+                        >
+                            {chatCtx.isVideoEnabled ? <VideoIcon /> : <VideoOffIcon />}
+                        </Button>
+                        <Button
+                            color="white"
+                            onClick={toggleAudio}
+                        >
+                            {chatCtx.isAudioEnabled ? <SoundIcon /> : <SoundOffIcon />}
+                        </Button>
+                    </div>
                 </div>
             </div>
-        </div>
-    </Sidebar>
+        </Sidebar>
 
       {/* 右側：視訊畫面 */}
       <div className="pl-20 w-full h-screen bg-gray-100 flex flex-col">

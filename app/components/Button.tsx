@@ -9,6 +9,10 @@ export default function Button({children, color, onClick}) {
         buttonColor = 'bg-gradient-to-r from-[#9A7957] to-[#6C553B]'
     }
 
+    if (color === 'red') {
+        buttonColor = 'bg-gradient-to-r from-[#6C553B] to-[#E7000B]'
+    }
+
     return (
         <button 
             className={`${buttonColor} px-6 py-3 rounded-lg text-white text-lg font-semibold shadow-md hover:shadow-xl hover:scale-105 transform transition flex justify-center items-center gap-2`}
