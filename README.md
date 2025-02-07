@@ -1,36 +1,112 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🌿 Green Island - Real-Time Chat & Video Call App
 
-## Getting Started
+Green Island is a modern real-time **chat and video call platform** that prioritizes privacy and security. Imagine stepping onto a secluded island where conversations disappear once you leave—just like a peaceful getaway. ✨
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## 🚀 Features
+
+### 💬 Real-Time Chat
+- Instant text messaging with a smooth user experience.
+- Supports Markdown for better text formatting.
+- Secure, private, and anonymous messaging.
+
+### 🎥 Video Call (Powered by **Agora**)
+- High-quality, **low-latency** video calls.
+- Multi-user video conferencing support.
+- **Screen sharing** feature for presentations or collaborations.
+
+### 🎨 Elegant & Responsive UI
+- Minimalist design with **Tailwind CSS** for a sleek and modern look.
+- Fully **responsive** for desktop, tablet, and mobile devices.
+
+### 🔒 Privacy Protection
+- All chat messages and media **automatically disappear** after the conversation ends.
+- **No data tracking**, ensuring a safe and private communication space.
+
+---
+
+## 🖼️ Preview
+
+### 🔹 Home Page
+![HomePage](./assets/HomePage.png)
+
+### 🔹 Chat Room Interface
+![ChatRoom](./assets/ChatRoom.png)
+![ChatRoomFeatures](./assets/ChatRoomFeatures.png)
+
+### 🔹 Video Preparing Room Interface
+![VideoPreparing](./assets/PreparingVideoCall.png)
+
+### 🔹 Video Call Room Interface
+![VideoCallRoom](./assets/ScreenSharing.png)
+
+---
+
+## 🛠️ Tech Stack
+
+- **Frontend**: Next.js, React, Tailwind CSS, TypeScript
+- **Backend**: Node.js, Express, Prisma, Socket.IO
+- **Database**: SQLite (for development) or PostgreSQL (for production)
+- **WebSocket**: Real-time messaging powered by **Socket.IO**
+- **Video Streaming**: **Agora SDK** for stable video/audio communication
+- **Deployment**: Render (for both frontend and backend)
+
+---
+
+## 🎯 Getting Started
+
+### 📌 Prerequisites
+- **Node.js** v16+ installed
+- **NPM** or **Yarn** installed
+- An **Agora App ID** for video calls
+
+### 🔧 Installation
+
+1️⃣ **Clone the Repository**
+```sh
+git clone https://github.com/your-username/green-island.git
+cd green-island
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2️⃣ **Install Dependencies**
+```sh
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3️⃣ **Set Up Environment Variables Create a `.env.local` file in the root directory and add:**
+```sh
+NEXT_PUBLIC_AGORA_APP_ID=your_agora_app_id
+NEXT_PUBLIC_BASE_URL=your_backend_url
+```
+4️⃣ **Start the Application**
+- Start the **frontend**:
+    ```sh
+    npm run dev:client
+    ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Start the **backend**:
+    ```sh
+    npm run dev:server
+    ```
 
-## Learn More
+### 🌍 Deployment
 
-To learn more about Next.js, take a look at the following resources:
+#### ✅ Deploy on Render
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+This project is optimized for deployment on Render.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Deploy **frontend**:
+    - Add frontend repository to Render.
+    - Set NEXT_PUBLIC_BASE_URL as your backend URL.
+2. Deploy **backend**:
+    - Add backend repository to Render.
+    - Use **Prisma** for production instead of SQLite.
+    - Ensure **WebSockets are enabled**.
 
-## Deploy on Vercel
+### 📢 Contact & Contribution
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+If you have any feedback, feature requests, or issues, feel free to:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Open an issue or submit a pull request on GitHub.
+- Reach out via email: xuyuwei19940909@gmail.com.
