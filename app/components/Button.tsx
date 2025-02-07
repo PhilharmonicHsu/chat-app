@@ -19,9 +19,8 @@ export default function Button({children, color, onClick, disabled = false}) {
     }
 
     if (disabled) {
-        hover = 'cursor-not-allowed';
+        hover = 'cursor-not-allowed opacity-50';
     }
-
 
     return (
         <button 

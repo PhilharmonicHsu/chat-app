@@ -6,10 +6,9 @@ import Button from '@components/Button'
 import {AudioIcon, AudioOffIcon, VideoIcon, VideoOffIcon} from '@components/icons'
 import { MdOutlineFitScreen } from "react-icons/md";
 import { FaDoorOpen } from "react-icons/fa6";
-import { FullScreen, useFullScreenHandle } from "react-full-screen";
-import './screen-share.scss'
 import AgoraRTC, { IAgoraRTCClient, IRemoteVideoTrack } from "agora-rtc-sdk-ng";
 import { ChatContext } from "@context/ChatContextProvider";
+import ShareScreen from '@components/VideoCallRoom/ShareScreen';
 
 AgoraRTC.setLogLevel(2); // close all of the logs
 
@@ -20,7 +19,7 @@ const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
 interface IAgoraRTCRemoteUser {
     uid: string | number;
     videoTrack?: IRemoteVideoTrack | null;
-  }
+}
 
 export default function VideoCallRoom() {
     const APP_ID = process.env.NEXT_PUBLIC_AGORA_APP_ID!; // 替換為你的 Agora App ID
@@ -37,8 +36,7 @@ export default function VideoCallRoom() {
     const [screenClient, setScreenClient] = useState<IAgoraRTCClient | null>(null);
     const [remoteUsers, setRemoteUsers] = useState<IAgoraRTCRemoteUser[]>([]);
     const [isSharingScreen, setIsSharingScreen] = useState(false);
-
-    const handle = useFullScreenHandle();
+    const [isSharingSelfScreen, setIsSharingSelfScreen] = useState(false);
 
     useEffect(() => {
         const joinChannel = async () => {
@@ -65,9 +63,9 @@ export default function VideoCallRoom() {
     
             await videoTrack.setEnabled(chatCtx.isVideoEnabled);
             await audioTrack.setEnabled(chatCtx.isAudioEnabled);
-    
+            console.log(sharingScreenRef.current)
             // 更新遠端用戶
-            client.on("user-published", async (user, mediaType) => {                        
+            client.on("user-published", async (user, mediaType) => {    
                 await client.subscribe(user, mediaType);
                 
                 if (mediaType === 'video') {
@@ -91,9 +89,10 @@ export default function VideoCallRoom() {
     
                     if (user.uid === SCREEN_SHARE_UID) {
                         setIsSharingScreen(true);  
-    
+                        console.log(sharingScreenRef.current)
                         if (sharingScreenRef.current) {
-                            user.videoTrack?.play(sharingScreenRef.current)
+                            // user.videoTrack?.play(sharingScreenRef.current.playVideo())
+                            sharingScreenRef.current.playVideo(user.videoTrack);
                         }
                     } 
                 }
@@ -147,15 +146,14 @@ export default function VideoCallRoom() {
                 await client.subscribe(screenSharinigUser, "video"); // subscribe video stream
     
                 if (sharingScreenRef.current) {
-                    screenSharinigUser.videoTrack?.play(sharingScreenRef.current)
+                    sharingScreenRef.current.playVideo(screenSharinigUser.videoTrack)
+                    // screenSharinigUser.videoTrack?.play(sharingScreenRef.current)
                 }
             }
         };
 
         joinChannel()
     }, [APP_ID, CHANNEL_NAME, chatCtx.isAudioEnabled, chatCtx.isVideoEnabled]);
-
-    
 
     const leavingChannel = async () => {
         localAudioTrackRef.current?.close();
@@ -178,29 +176,32 @@ export default function VideoCallRoom() {
         }
     }
 
-  const toggleScreenShare = async () => {
-    if (!isSharingScreen) {
-        const screenClient = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
-        await screenClient.join(APP_ID, CHANNEL_NAME, null, SCREEN_SHARE_UID);
+    const toggleScreenShare = async () => {
+        console.log(sharingScreenRef.current)
+        if (!isSharingScreen) {
+            const screenClient = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+            await screenClient.join(APP_ID, CHANNEL_NAME, null, SCREEN_SHARE_UID);
 
-        const screenTrack = await AgoraRTC.createScreenVideoTrack({
-            encoderConfig: "1080p_1",
-        });
+            const screenTrack = await AgoraRTC.createScreenVideoTrack({
+                encoderConfig: "1080p_1",
+            });
 
-        await screenClient.publish(screenTrack);
+            await screenClient.publish(screenTrack);
 
-        localScreenShareTrackRef.current = screenTrack;
+            localScreenShareTrackRef.current = screenTrack;
 
-        setScreenClient(screenClient);
-        setIsSharingScreen(true);      
-    } else {        
-        await client.unpublish(localScreenShareTrackRef.current);
-        localScreenShareTrackRef.current?.close();
+            setIsSharingSelfScreen(true);
+            setScreenClient(screenClient);
+            setIsSharingScreen(true);      
+        } else {        
+            await client.unpublish(localScreenShareTrackRef.current);
+            localScreenShareTrackRef.current?.close();
 
-        screenClient?.leave();
-        setIsSharingScreen(false);
-    }
-  };
+            screenClient?.leave();
+            setIsSharingSelfScreen(false);
+            setIsSharingScreen(false);
+        }
+    };
 
     const userVideoBarClasses = useMemo(() => {
         const classes = ['bg-gray-800', 'gap-2', 'items-center', 'p-2'];
@@ -266,9 +267,10 @@ export default function VideoCallRoom() {
                 <Button
                     color="blue"
                     onClick={toggleScreenShare}
+                    disabled={isSharingScreen && !isSharingSelfScreen}
                 >
                     <MdOutlineFitScreen />
-                    {isSharingScreen ? "Stop sharing" : "Share screen"}
+                    {isSharingScreen && isSharingSelfScreen ? "Stop sharing" : "Share screen"}
                 </Button>
 
                 <div className="bg-white bg-opacity-10 p-4 rounded-lg shadow-lg">
@@ -293,17 +295,7 @@ export default function VideoCallRoom() {
 
       {/* 右側：視訊畫面 */}
       <div className="pl-20 w-full h-screen bg-gray-100 flex flex-col">
-        <FullScreen handle={handle} 
-            className={ isSharingScreen 
-                ? "flex-1 overflow-y-auto h-screen aspect-video flex" 
-                : "flex-1 overflow-y-auto h-screen aspect-video flex hidden"
-            } 
-        >
-            <div ref={sharingScreenRef} 
-                 className="screen-share flex-1 aspect-video flex justify-center items-center w-full"
-                 onClick={() => handle.enter()}
-            />
-        </FullScreen>
+        <ShareScreen ref={sharingScreenRef} isSharingScreen={isSharingScreen} />
         
         <div className={userVideoBarClasses}>
             {[...remoteUsers].filter(user => user.uid !== SCREEN_SHARE_UID).map(user => (

@@ -34,7 +34,7 @@ export const ChatContext = createContext<ChatContextType>({
 });
 
 export default function ChatContextProvider({children}) {
-    const [mode, setMode] = useState<string>(Mode.CHAT);
+    const [mode, setMode] = useState<string>(Mode.MEETING);
     const [nickname, setNickname] = useState('');
     const [isAudioEnabled, setIsAudioEnabled] = useState(true);
     const [isVideoEnabled, setIsVideoEnabled] = useState(true);
