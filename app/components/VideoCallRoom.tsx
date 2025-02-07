@@ -91,6 +91,8 @@ export default function VideoCallRoom() {
                             sharingScreenRef.current.playVideo(user.videoTrack);
                         }
                     } 
+                } else {
+                    user.audioTrack?.play();
                 }
             });
     
@@ -134,6 +136,8 @@ export default function VideoCallRoom() {
                     ...prev, 
                     { uid: user.uid, videoTrack: user.videoTrack, audioTrack: user.audioTrack }
                 ]);
+
+                user.audioTrack?.play();
             }
     
             const screenSharinigUser = client.remoteUsers.find(user => user.uid === GLOBAL_CONFIG.SCREEN_SHARE_UID);
