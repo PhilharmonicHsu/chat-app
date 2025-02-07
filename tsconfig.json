@@ -29,6 +29,7 @@
       "@utils/*": ["app/utils/*"],
       "@components/*": ["app/components/*"],
       "@context/*": ["app/context/*"],
+      "@enums/*": ["app/enums/*"]
     },
     "noEmit": true
   },

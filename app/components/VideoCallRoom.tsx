@@ -3,16 +3,16 @@
 import React, { useEffect, useState, useRef, useContext } from "react";
 import Sidebar from '@components/Common/Sidebar'
 import Button from '@components/Common/Button'
-import {AudioIcon, AudioOffIcon, VideoIcon, VideoOffIcon} from '@components/icons'
 import { MdOutlineFitScreen } from "react-icons/md";
 import { FaDoorOpen } from "react-icons/fa6";
 import AgoraRTC from "agora-rtc-sdk-ng";
 import { ChatContext } from "@context/ChatContextProvider";
 import ShareScreen from '@components/VideoCallRoom/ShareScreen';
 import UserVideoArea from '@components/VideoCallRoom/UserVideoArea';
+import VideoController from "@components/Common/VideoController";
 import {IAgoraRTCRemoteUser, IAgoraRTCClient} from '../types';
 import GLOBAL_CONFIG from '@utils/globals'
-import { ConnectionState, Mode } from '@/enums'
+import { ConnectionState, Mode } from '@enums/index'
 
 AgoraRTC.setLogLevel(2); // close all of the logs
 
@@ -62,9 +62,8 @@ export default function VideoCallRoom() {
             await audioTrack.setEnabled(chatCtx.isAudioEnabled);
 
             // 更新遠端用戶
-            client.on("user-published", async (user, mediaType) => {    
-                await client.subscribe(user, mediaType);
-                
+            client.on("user-published", async (user, mediaType) => {
+                await client.subscribe(user, mediaType);          
                 if (mediaType === 'video') {
                     // before get videoTrack, we need to subscribe
                     setRemoteUsers(prev => {
@@ -92,6 +91,23 @@ export default function VideoCallRoom() {
                         }
                     } 
                 } else {
+                    setRemoteUsers(prev => {
+                        const targetRemoteUser = prev.find(remoteUser => remoteUser.uid === user.uid);
+                        if (targetRemoteUser) {
+                            targetRemoteUser.audioTrack = user.audioTrack
+    
+                            return prev.map(remoteUser => remoteUser.uid === targetRemoteUser.uid 
+                                ? targetRemoteUser
+                                : remoteUser
+                            )
+                        } else {
+                            return [
+                                ...prev,
+                                { uid: user.uid, videoTrack: null, audioTrack: user.audioTrack }
+                            ]
+                        }
+                    })
+
                     user.audioTrack?.play();
                 }
             });
@@ -161,22 +177,7 @@ export default function VideoCallRoom() {
         chatCtx.toggleMode(Mode.CHAT)
     }
 
-    const toggleVideo = async () => {
-        if (localVideoTrackRef.current) {
-            await localVideoTrackRef.current.setEnabled(! chatCtx.isVideoEnabled);
-            chatCtx.toggleIsVideoEnabled(! chatCtx.isVideoEnabled);
-        }
-    }
-
-    const toggleAudio = async () => {
-        if (localAudioTrackRef.current) {
-            await localAudioTrackRef.current.setEnabled(! chatCtx.isAudioEnabled);
-            chatCtx.toggleIsAudioEnabled(! chatCtx.isAudioEnabled);
-        }
-    }
-
     const toggleScreenShare = async () => {
-        console.log(sharingScreenRef.current)
         if (!isSharingScreen) {
             const screenClient = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
             await screenClient.join(APP_ID, CHANNEL_NAME, null, GLOBAL_CONFIG.SCREEN_SHARE_UID);
@@ -207,7 +208,7 @@ export default function VideoCallRoom() {
             <Sidebar>
                 <ul>
                     {remoteUsers.map((user) => (
-                        <li key={user.uid}>用戶 {user.uid}</li>
+                        <li key={user.uid}>User {user.uid}</li>
                     ))}
                 </ul>
                 <div className="flex flex-col gap-4">
@@ -226,24 +227,7 @@ export default function VideoCallRoom() {
                         <MdOutlineFitScreen />
                         {isSharingScreen && isSharingSelfScreen ? "Stop sharing" : "Share screen"}
                     </Button>
-
-                    <div className="bg-white bg-opacity-10 p-4 rounded-lg shadow-lg">
-                        <h3 className="text-center font-bold text-lg mb-4">Setting Up</h3>
-                        <div className="flex gap-4 justify-center">
-                            <Button
-                                color="white"
-                                onClick={toggleVideo}
-                            >
-                                {chatCtx.isVideoEnabled ? <VideoIcon /> : <VideoOffIcon />}
-                            </Button>
-                            <Button
-                                color="white"
-                                onClick={toggleAudio}
-                            >
-                                {chatCtx.isAudioEnabled ? <AudioIcon /> : <AudioOffIcon />}
-                            </Button>
-                        </div>
-                    </div>
+                    <VideoController localAudioTrackRef={localAudioTrackRef} localVideoTrackRef={localVideoTrackRef} />
                 </div>
             </Sidebar>
 

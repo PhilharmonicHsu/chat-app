@@ -3,9 +3,11 @@
 import React, { useEffect, useState, useRef, useContext } from "react";
 import AgoraRTC from "agora-rtc-sdk-ng";
 import { ChatContext } from "@context/ChatContextProvider";
-import {AudioIcon, AudioOffIcon, VideoIcon, VideoOffIcon} from "@components/icons"
-import { ToastContainer, toast } from 'react-toastify';
+import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { ConnectionState, Mode } from '@/enums'
+import Button from '@components/Common/Button';
+import VideoController from '@components/Common/VideoController'
 
 AgoraRTC.setLogLevel(2); // close all of the logs
 
@@ -25,7 +27,7 @@ export default function VideoCallRoom() {
   
     useEffect(() => {
       const joinChannel = async () => {
-        if (client.connectionState !== "DISCONNECTED") {
+        if (client.connectionState !== ConnectionState.DISCONNECTED) {
           return 
         }
         
@@ -70,45 +72,29 @@ export default function VideoCallRoom() {
       localVideoTrackRef.current?.close();
       client.leave();
 
-      chatCtx.toggleMode("meeting")
-    };
-  
-    const toggleSound = async () => {
-      await localAudioTrackRef.current.setEnabled(!chatCtx.isAudioEnabled);
-      chatCtx.toggleIsAudioEnabled(! chatCtx.isAudioEnabled)
-      toast.success(`Audio ${chatCtx.isAudioEnabled ? 'Muted' : 'Unmuted'}`, {
-        position: 'top-center',
-      });
-    };
-  
-    const toggleVideo = async () => {
-      await localVideoTrackRef.current.setEnabled(!chatCtx.isVideoEnabled);
-      chatCtx.toggleIsVideoEnabled(! chatCtx.isVideoEnabled)
-      toast.success(`Video ${chatCtx.isVideoEnabled ? 'Stopped' : 'Started'}`, {
-        position: 'top-center',
-      });
+      chatCtx.toggleMode(Mode.MEETING)
     };
   
     return (
       <div className="flex h-screen font-sans">
         {/* 左側：房間資訊 */}
-        <div className="w-full lg:w-1/4 bg-gradient-to-b from-[#5A5A5A] to-[#836953] text-white p-6 flex flex-col gap-6 shadow-xl">
+        <aside className="w-full lg:w-1/4 bg-gradient-to-b from-[#5A5A5A] to-[#836953] text-white p-6 flex flex-col gap-6 shadow-xl">
           <h2 className="text-3xl font-semibold mb-6 text-center font-exo">
             Preparing
-        </h2>
-          <button
-            className="bg-gradient-to-r from-[#6B93D6] to-[#375A96] px-6 py-3 rounded-lg text-white text-lg font-semibold shadow-md hover:shadow-xl hover:scale-105 transform transition"
+          </h2>
+          <Button
+            color="blue"
             onClick={prepared}
           >
             Prepared & Join Room
-          </button>
+          </Button>
   
-          <button
-            className="bg-gradient-to-r from-[#9A7957] to-[#6C553B] px-6 py-3 rounded-lg text-white text-lg font-semibold shadow-md hover:shadow-xl hover:scale-105 transform transition"
-            onClick={() => chatCtx.toggleMode("chat")}
+          <Button
+            color="brown"
+            onClick={() => chatCtx.toggleMode(Mode.CHAT)}
           >
             Back to Chat
-          </button>
+          </Button>
           <div className={ isSmallSize 
             ? "flex-1 w-full bg-stone-400 flex items-center justify-center shadow-inner rounded-lg"
             : "hidden flex-1 w-full bg-stone-400 flex items-center justify-center shadow-inner rounded-lg"
@@ -118,24 +104,8 @@ export default function VideoCallRoom() {
                   ref={smallScreenRef}
               />
           </div>
-          <div className="bg-white bg-opacity-10 p-4 rounded-lg shadow-lg">
-            <h3 className="text-center font-bold text-lg mb-4">Setting Up</h3>
-            <div className="flex gap-4 justify-center">
-              <button
-                className="bg-white p-4 rounded-md shadow-md hover:shadow-lg hover:scale-105 transition"
-                onClick={toggleSound}
-              >
-                {chatCtx.isAudioEnabled ? <AudioIcon /> : <AudioOffIcon />}
-              </button>
-              <button
-                className="bg-white p-4 rounded-md shadow-md hover:shadow-lg hover:scale-105 transition"
-                onClick={toggleVideo}
-              >
-                {chatCtx.isVideoEnabled ? <VideoIcon /> : <VideoOffIcon />}
-              </button>
-            </div>
-          </div>
-        </div>
+          <VideoController localAudioTrackRef={localAudioTrackRef} localVideoTrackRef={localVideoTrackRef} />
+        </aside>
   
         {/* 右側：視訊畫面 */}
         <div className={isSmallSize

@@ -21,17 +21,17 @@ export default function Lobby({roomId}) {
         <div className="text-center bg-white shadow-lg rounded-lg p-6 w-[30rem] flex flex-col justify-center items-center">
             <h2 className="text-xl font-bold mb-4 text-black">Enter your Nickname</h2>
             <input
-            type="text"
-            placeholder="Your Nickname"
-            value={nickname}
-            onChange={(e) => setNickname(e.target.value)}
-            className="border px-4 py-2 rounded-lg w-full mb-4 text-black"
+                type="text"
+                placeholder="Your Nickname"
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
+                className="border px-4 py-2 rounded-lg w-full mb-4 text-black"
             />
             <Button
-            color="brown"
-            onClick={handleNicknameSubmit}
+                color="brown"
+                onClick={handleNicknameSubmit}
             >
-            Enter Room
+                Enter Room
             </Button>
         </div>
     </div>

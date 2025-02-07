@@ -47,7 +47,7 @@ export default function ChatRoom() {
       Notification.requestPermission();
     }
 
-    if (!decrypted || !decrypted.roomId || !decrypted.nickname) {
+    if (!decrypted.roomId || !decrypted.nickname) {
       alert("Invalid room data");
       router.push("/");
 
