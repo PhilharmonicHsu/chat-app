@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { encryptData} from "@utils/crypto";
 import { useRouter } from "next/navigation";
-import Button from '@components/Button';
+import Button from '@components/Common/Button';
 
 export default function Lobby({roomId}) {
     const [nickname, setNickname] = useState<string>("");

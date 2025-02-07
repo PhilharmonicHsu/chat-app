@@ -1,25 +1,22 @@
 'use client'
 
-import React, { useEffect, useState, useRef, useContext, useMemo } from "react";
-import Sidebar from '@components/Sidebar'
-import Button from '@components/Button'
+import React, { useEffect, useState, useRef, useContext } from "react";
+import Sidebar from '@components/Common/Sidebar'
+import Button from '@components/Common/Button'
 import {AudioIcon, AudioOffIcon, VideoIcon, VideoOffIcon} from '@components/icons'
 import { MdOutlineFitScreen } from "react-icons/md";
 import { FaDoorOpen } from "react-icons/fa6";
-import AgoraRTC, { IAgoraRTCClient, IRemoteVideoTrack } from "agora-rtc-sdk-ng";
+import AgoraRTC from "agora-rtc-sdk-ng";
 import { ChatContext } from "@context/ChatContextProvider";
 import ShareScreen from '@components/VideoCallRoom/ShareScreen';
+import UserVideoArea from '@components/VideoCallRoom/UserVideoArea';
+import {IAgoraRTCRemoteUser, IAgoraRTCClient} from '../types';
+import GLOBAL_CONFIG from '@utils/globals'
+import { ConnectionState, Mode } from '@/enums'
 
 AgoraRTC.setLogLevel(2); // close all of the logs
 
-const SCREEN_SHARE_UID = 1;
-
 const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
-
-interface IAgoraRTCRemoteUser {
-    uid: string | number;
-    videoTrack?: IRemoteVideoTrack | null;
-}
 
 export default function VideoCallRoom() {
     const APP_ID = process.env.NEXT_PUBLIC_AGORA_APP_ID!; // 替換為你的 Agora App ID
@@ -40,7 +37,7 @@ export default function VideoCallRoom() {
 
     useEffect(() => {
         const joinChannel = async () => {
-            if (client.connectionState !== "DISCONNECTED") {
+            if (client.connectionState !== ConnectionState.DISCONNECTED) {
                 return;
             }
     
@@ -58,12 +55,12 @@ export default function VideoCallRoom() {
             await client.publish(tracks);
         
             if (selfScreenRef.current) {
-                videoTrack?.play(selfScreenRef.current)
+                selfScreenRef.current.playSelfVideo(videoTrack)
             }
     
             await videoTrack.setEnabled(chatCtx.isVideoEnabled);
             await audioTrack.setEnabled(chatCtx.isAudioEnabled);
-            console.log(sharingScreenRef.current)
+
             // 更新遠端用戶
             client.on("user-published", async (user, mediaType) => {    
                 await client.subscribe(user, mediaType);
@@ -87,11 +84,10 @@ export default function VideoCallRoom() {
                         }
                     })
     
-                    if (user.uid === SCREEN_SHARE_UID) {
+                    if (user.uid === GLOBAL_CONFIG.SCREEN_SHARE_UID) {
                         setIsSharingScreen(true);  
-                        console.log(sharingScreenRef.current)
+
                         if (sharingScreenRef.current) {
-                            // user.videoTrack?.play(sharingScreenRef.current.playVideo())
                             sharingScreenRef.current.playVideo(user.videoTrack);
                         }
                     } 
@@ -108,7 +104,7 @@ export default function VideoCallRoom() {
                         )
                     );
     
-                    if (user.uid === SCREEN_SHARE_UID) {
+                    if (user.uid === GLOBAL_CONFIG.SCREEN_SHARE_UID) {
                         setIsSharingScreen(false);  
         
                         if (sharingScreenRef.current) {
@@ -140,14 +136,13 @@ export default function VideoCallRoom() {
                 ]);
             }
     
-            const screenSharinigUser = client.remoteUsers.find(user => user.uid === SCREEN_SHARE_UID);
+            const screenSharinigUser = client.remoteUsers.find(user => user.uid === GLOBAL_CONFIG.SCREEN_SHARE_UID);
     
             if (screenSharinigUser) {
                 await client.subscribe(screenSharinigUser, "video"); // subscribe video stream
     
                 if (sharingScreenRef.current) {
                     sharingScreenRef.current.playVideo(screenSharinigUser.videoTrack)
-                    // screenSharinigUser.videoTrack?.play(sharingScreenRef.current)
                 }
             }
         };
@@ -159,7 +154,7 @@ export default function VideoCallRoom() {
         localAudioTrackRef.current?.close();
         localVideoTrackRef.current?.close();
         client.leave();
-        chatCtx.toggleMode("chat")
+        chatCtx.toggleMode(Mode.CHAT)
     }
 
     const toggleVideo = async () => {
@@ -180,7 +175,7 @@ export default function VideoCallRoom() {
         console.log(sharingScreenRef.current)
         if (!isSharingScreen) {
             const screenClient = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
-            await screenClient.join(APP_ID, CHANNEL_NAME, null, SCREEN_SHARE_UID);
+            await screenClient.join(APP_ID, CHANNEL_NAME, null, GLOBAL_CONFIG.SCREEN_SHARE_UID);
 
             const screenTrack = await AgoraRTC.createScreenVideoTrack({
                 encoderConfig: "1080p_1",
@@ -203,115 +198,56 @@ export default function VideoCallRoom() {
         }
     };
 
-    const userVideoBarClasses = useMemo(() => {
-        const classes = ['bg-gray-800', 'gap-2', 'items-center', 'p-2'];
+    return (
+        <div className="relative flex w-full h-screen">
+            <Sidebar>
+                <ul>
+                    {remoteUsers.map((user) => (
+                        <li key={user.uid}>用戶 {user.uid}</li>
+                    ))}
+                </ul>
+                <div className="flex flex-col gap-4">
+                    <Button 
+                        color="red"
+                        onClick={leavingChannel}
+                    >
+                        <FaDoorOpen />
+                        Leaving Room 
+                    </Button>
+                    <Button
+                        color="blue"
+                        onClick={toggleScreenShare}
+                        disabled={isSharingScreen && !isSharingSelfScreen}
+                    >
+                        <MdOutlineFitScreen />
+                        {isSharingScreen && isSharingSelfScreen ? "Stop sharing" : "Share screen"}
+                    </Button>
 
-        if (isSharingScreen) {
-            classes.push(...['h-auto', 'max-h-[200px]', 'w-auto', 'flex', 'overflow-x-scroll']);
-        } else {
-            const userAmount = [...remoteUsers].filter(user => user.uid !== SCREEN_SHARE_UID).length + 1; // plus self
-
-            let cols = 'grid-rows-2 grid-cols-2'
-
-            if (userAmount === 1) {
-                cols = 'grid-rows-1 grid-cols-1'
-            } else if (userAmount === 2) {
-                cols = 'grid-rows-1 grid-cols-2'
-            } else if (userAmount === 3 || userAmount === 4) {
-                cols = 'grid-rows-2 grid-cols-2'
-            } else if (userAmount === 5 || userAmount === 6) {
-                cols = 'grid-rows-2 grid-cols-3'
-            } else if (userAmount >= 7 || userAmount <= 9) {
-                cols = 'grid-rows-3 grid-cols-3'
-            } else if (userAmount >= 10 || userAmount <= 12) {
-                cols = 'grid-rows-3 grid-cols-4'
-            } else {
-                cols = 'grid-rows-4 grid-cols-4'
-            }
-
-            classes.push(...['flex-1', 'grid', cols, 'auto-cols-auto', 'overflow-y-auto']);
-        }
-
-        return classes.join(' ');
-    }, [isSharingScreen, remoteUsers]);
-
-
-    const userVideoClasses = () => {
-        const classes = ['bg-gray-400', 'rounded-lg', 'overflow-hidden', 'aspect-video'];
-        
-        if (isSharingScreen) {
-            classes.push(...['user-video', 'h-[200px]'])
-        } else {
-            classes.push(...['flex-1'])
-        }
-
-        return classes.join(' ');
-    }
-
-  return (
-    <div className="relative flex w-full h-screen">
-        <Sidebar>
-            <ul>
-                {remoteUsers.map((user) => (
-                    <li key={user.uid}>用戶 {user.uid}</li>
-                ))}
-            </ul>
-            <div className="flex flex-col gap-4">
-                <Button 
-                    color="red"
-                    onClick={leavingChannel}
-                >
-                    <FaDoorOpen />
-                    Leaving Room 
-                </Button>
-                <Button
-                    color="blue"
-                    onClick={toggleScreenShare}
-                    disabled={isSharingScreen && !isSharingSelfScreen}
-                >
-                    <MdOutlineFitScreen />
-                    {isSharingScreen && isSharingSelfScreen ? "Stop sharing" : "Share screen"}
-                </Button>
-
-                <div className="bg-white bg-opacity-10 p-4 rounded-lg shadow-lg">
-                    <h3 className="text-center font-bold text-lg mb-4">Setting Up</h3>
-                    <div className="flex gap-4 justify-center">
-                        <Button
-                            color="white"
-                            onClick={toggleVideo}
-                        >
-                            {chatCtx.isVideoEnabled ? <VideoIcon /> : <VideoOffIcon />}
-                        </Button>
-                        <Button
-                            color="white"
-                            onClick={toggleAudio}
-                        >
-                            {chatCtx.isAudioEnabled ? <AudioIcon /> : <AudioOffIcon />}
-                        </Button>
+                    <div className="bg-white bg-opacity-10 p-4 rounded-lg shadow-lg">
+                        <h3 className="text-center font-bold text-lg mb-4">Setting Up</h3>
+                        <div className="flex gap-4 justify-center">
+                            <Button
+                                color="white"
+                                onClick={toggleVideo}
+                            >
+                                {chatCtx.isVideoEnabled ? <VideoIcon /> : <VideoOffIcon />}
+                            </Button>
+                            <Button
+                                color="white"
+                                onClick={toggleAudio}
+                            >
+                                {chatCtx.isAudioEnabled ? <AudioIcon /> : <AudioOffIcon />}
+                            </Button>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </Sidebar>
+            </Sidebar>
 
-      {/* 右側：視訊畫面 */}
-      <div className="pl-20 w-full h-screen bg-gray-100 flex flex-col">
-        <ShareScreen ref={sharingScreenRef} isSharingScreen={isSharingScreen} />
-        
-        <div className={userVideoBarClasses}>
-            {[...remoteUsers].filter(user => user.uid !== SCREEN_SHARE_UID).map(user => (
-                <div
-                key={user.uid}
-                className={userVideoClasses()}
-                ref={(el) => el && user.videoTrack?.play(el)}
-                /> 
-            ))}
-            {/* 自己的畫面 */}
-            <div
-                className={userVideoClasses()}
-                ref={selfScreenRef}
-            />
+            {/* 右側：視訊畫面 */}
+            <div className="pl-20 w-full h-screen bg-gray-100 flex flex-col">
+                <ShareScreen ref={sharingScreenRef} isSharingScreen={isSharingScreen} />
+                <UserVideoArea ref={selfScreenRef} remoteUsers={remoteUsers} isSharingScreen={isSharingScreen} />
+            </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 }

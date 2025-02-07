@@ -3,9 +3,9 @@
 import {io} from "socket.io-client";
 import { useRouter } from "next/navigation";
 import {encryptData} from '@utils/crypto';
-import Introduction from "@components/Introduction";
-import DynamicBackground from "@components/DynamicBackground";
-import Footer from "@components/Footer";
+import Introduction from "@components/HomePage/Introduction";
+import DynamicBackground from "@components/HomePage/DynamicBackground";
+import Footer from "@components/Common/Footer";
 
 export default function HomePage() {
   const router = useRouter();

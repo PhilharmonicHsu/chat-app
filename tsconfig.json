@@ -24,15 +24,11 @@
     ],
     "baseUrl": ".",
     "paths": {
-      "@utils/*": [
-        "app/utils/*"
-      ], // 添加路徑別名
-      "@components/*": [
-        "app/components/*"
-      ],
-      "@context/*": [
-        "app/context/*"
-      ]
+      "@/*": ["app/*"],
+      "@utills/*": ["app/utills/*"],
+      "@utils/*": ["app/utils/*"],
+      "@components/*": ["app/components/*"],
+      "@context/*": ["app/context/*"],
     },
     "noEmit": true
   },

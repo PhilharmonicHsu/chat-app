@@ -1,13 +1,8 @@
 import {createContext, useState} from 'react'
-
-export enum Mode {
-    CHAT = 'chat',
-    MEETING = 'meeting',
-    PREPARING = 'preparing'
-}
+import { Mode } from '@/enums'
 
 // 定義 Context 類型
-interface ChatContextType {
+type ChatContextType = {
     mode: string;
     toggleMode: (mode: string) => void;
     nickname: string,

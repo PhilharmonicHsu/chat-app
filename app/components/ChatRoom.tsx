@@ -18,12 +18,13 @@ import { useParams } from "next/navigation";
 import { io } from "socket.io-client";
 import VideoCallRoom from "@components/VideoCallRoom";
 import VideoPreparingRoom from "@components/VideoPreparingRoom";
-import { ChatContext, Mode } from "@context/ChatContextProvider";
+import { ChatContext } from "@context/ChatContextProvider";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import Sidebar from '@components/Sidebar'
-import Button from '@components/Button'
+import Sidebar from '@components/Common/Sidebar'
+import Button from '@components/Common/Button'
 import Image from "next/image";
+import { Mode } from '../enums'
 
 const socket = io(process.env.NEXT_PUBLIC_WEBSOCKET_URL || "http://localhost:3001", {
   transports: ["websocket"], // 明確僅使用 WebSocket
@@ -62,7 +63,7 @@ export default function ChatRoom() {
         console.error(response.error);
       }
     });
-  }, [chatCtx, decrypted.roomId, router]);
+  }, [chatCtx, decrypted.roomId, decrypted.nickname, router]);
 
   useEffect(() => {
     socket.on("message", (pack) => {

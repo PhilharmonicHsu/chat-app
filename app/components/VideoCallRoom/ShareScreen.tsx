@@ -1,11 +1,10 @@
 import { FullScreen, useFullScreenHandle } from "react-full-screen";
 import './screen-share.scss';
 import {useState, useMemo, forwardRef, useImperativeHandle, useRef} from 'react';
-import { ICameraVideoTrack } from "agora-rtc-sdk-ng";
+import { ICameraVideoTrack } from '@/types'
 
 const ShareScreen = forwardRef(({isSharingScreen}: {isSharingScreen: boolean}, ref) => {
     const sharingScreenRef = useRef(null);
-
 
     useImperativeHandle(ref, () => ({
         playVideo: (videoTrack: ICameraVideoTrack) => {
@@ -52,5 +51,7 @@ const ShareScreen = forwardRef(({isSharingScreen}: {isSharingScreen: boolean}, r
         </FullScreen>
     </>
 }) 
+
+ShareScreen.displayName = 'ShareScreen';
 
 export default ShareScreen;
