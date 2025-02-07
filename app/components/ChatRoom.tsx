@@ -223,7 +223,6 @@ export default function ChatRoom() {
   if (chatCtx.mode === Mode.CHAT) {
     return (
       <div className="flex h-screen">
-        
         {/* 左側：房間資訊 */}
         <Sidebar>
           <p className="mt-2">Nickname: {chatCtx.nickname}</p>

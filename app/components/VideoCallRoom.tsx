@@ -202,42 +202,50 @@ export default function VideoCallRoom() {
     }
   };
 
-  const userVideoBarClasses = useMemo(() => {
-    const classes = ['bg-gray-800', 'gap-2', 'items-center', 'p-2'];
+    const userVideoBarClasses = useMemo(() => {
+        const classes = ['bg-gray-800', 'gap-2', 'items-center', 'p-2'];
 
-    if (isSharingScreen) {
-        classes.push(...['h-auto', 'max-h-[200px]', 'w-auto', 'flex', 'overflow-x-scroll']);
-    } else {
-        const userAmount = [...remoteUsers].filter(user => user.uid !== SCREEN_SHARE_UID).length + 1; // plus self
+        if (isSharingScreen) {
+            classes.push(...['h-auto', 'max-h-[200px]', 'w-auto', 'flex', 'overflow-x-scroll']);
+        } else {
+            const userAmount = [...remoteUsers].filter(user => user.uid !== SCREEN_SHARE_UID).length + 1; // plus self
 
-        let cols = Math.floor(userAmount / 2);
+            let cols = 'grid-rows-2 grid-cols-2'
 
-        cols = cols < 2 ? 2 : cols;
+            if (userAmount === 1) {
+                cols = 'grid-rows-1 grid-cols-1'
+            } else if (userAmount === 2) {
+                cols = 'grid-rows-1 grid-cols-2'
+            } else if (userAmount === 3 || userAmount === 4) {
+                cols = 'grid-rows-2 grid-cols-2'
+            } else if (userAmount === 5 || userAmount === 6) {
+                cols = 'grid-rows-2 grid-cols-3'
+            } else if (userAmount >= 7 || userAmount <= 9) {
+                cols = 'grid-rows-3 grid-cols-3'
+            } else if (userAmount >= 10 || userAmount <= 12) {
+                cols = 'grid-rows-3 grid-cols-4'
+            } else {
+                cols = 'grid-rows-4 grid-cols-4'
+            }
 
-        const colClasses = {
-          1: "grid-cols-1",
-          2: "grid-cols-2",
-          3: "grid-cols-3",
-          4: "grid-cols-4",
-        };
+            classes.push(...['flex-1', 'grid', cols, 'auto-cols-auto', 'overflow-y-auto']);
+        }
 
-        classes.push(...['flex-1', 'grid', colClasses[cols] || "grid-cols-2", 'auto-rows-auto', 'overflow-y-auto']);
+        return classes.join(' ');
+    }, [isSharingScreen, remoteUsers]);
+
+
+    const userVideoClasses = () => {
+        const classes = ['bg-gray-400', 'rounded-lg', 'overflow-hidden', 'aspect-video'];
+        
+        if (isSharingScreen) {
+            classes.push(...['user-video', 'h-[200px]'])
+        } else {
+            classes.push(...['flex-1'])
+        }
+
+        return classes.join(' ');
     }
-
-    return classes.join(' ');
-}, [isSharingScreen, remoteUsers]);
-
-
-  const userVideoClasses = () => {
-    const classes = ['bg-gray-400', 'rounded-lg', 'overflow-hidden', 'aspect-video'];
-    if (isSharingScreen) {
-        classes.push(...['user-video', 'h-[200px]'])
-    } else {
-        classes.push(...['flex-1'])
-    }
-
-    return classes.join(' ');
-  }
 
   return (
     <div className="relative flex w-full h-screen">

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {encryptData} from '@utils/crypto';
 import Introduction from "@components/Introduction";
 import DynamicBackground from "@components/DynamicBackground";
+import Footer from "@components/Footer";
 
 export default function HomePage() {
   const router = useRouter();
@@ -28,9 +29,12 @@ export default function HomePage() {
   };
 
   return (
-    <div className="relative h-screen flex justify-center items-center bg-gradient-to-b from-[#5A5A5A] to-[#836953]">
-      <DynamicBackground />
-      <Introduction handleCreateRoom={handleCreateRoom} />
-    </div>
+    <>
+      <div className="relative h-[calc(100vh-80px)] flex justify-center items-center bg-gradient-to-b from-[#5A5A5A] to-[#836953]">
+        <DynamicBackground />
+        <Introduction handleCreateRoom={handleCreateRoom} />
+      </div>
+      <Footer />
+    </>
   );
 }
