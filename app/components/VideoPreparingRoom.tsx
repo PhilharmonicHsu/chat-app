@@ -9,6 +9,7 @@ import { ConnectionState, Mode } from '@/enums'
 import Button from '@components/Common/Button';
 import VideoController from '@components/Common/VideoController'
 import config from '@/configs'
+import useDeviceCheck from "@/hooks/useDeviceCheck";
 
 AgoraRTC.setLogLevel(2); // close all of the logs
 
@@ -16,6 +17,8 @@ const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
 const APP_ID = config.publicAgoraAppId;
 
 export default function VideoCallRoom() {
+    useDeviceCheck();
+    
     const chatCtx = useContext(ChatContext);
 
     const localAudioTrackRef = useRef(null);

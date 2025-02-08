@@ -1,9 +1,14 @@
+'use client'
+
 import { useState } from "react";
 import { encryptData} from "@utils/crypto";
 import { useRouter } from "next/navigation";
 import Button from '@components/Common/Button';
+import useDeviceCheck from "@/hooks/useDeviceCheck";
 
 export default function Lobby({roomId}) {
+    useDeviceCheck();
+
     const [nickname, setNickname] = useState<string>("");
     const router = useRouter();
 

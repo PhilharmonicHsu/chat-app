@@ -14,12 +14,15 @@ import {IAgoraRTCRemoteUser, IAgoraRTCClient} from '../types';
 import GLOBAL_CONFIG from '@utils/globals'
 import { ConnectionState, Mode } from '@enums/index'
 import config from '@/configs'
+import useDeviceCheck from "@/hooks/useDeviceCheck";
 
 AgoraRTC.setLogLevel(2); // close all of the logs
 
 const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
 
 export default function VideoCallRoom() {
+    useDeviceCheck();
+    
     const APP_ID = config.publicAgoraAppId; // 替換為你的 Agora App ID
 
     const chatCtx = useContext(ChatContext);

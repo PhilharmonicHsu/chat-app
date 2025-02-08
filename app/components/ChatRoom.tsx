@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useEffect, useContext } from "react";
 import { useRouter, useParams } from "next/navigation";
@@ -17,12 +17,15 @@ import { IoVideocamOutline, IoCopyOutline } from "react-icons/io5";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import config from '@/configs'
+import useDeviceCheck from "@/hooks/useDeviceCheck";
 
 const socket = io(config.publicWebSocketUrl, {
   transports: ["websocket"],
 });
 
 export default function ChatRoom() {
+  useDeviceCheck();
+
   const router = useRouter();
   const [messages, setMessages] = useState<{ type: "text" | "image", nickname: string, content: string }[]>([]);
   const [inviteLink, setInviteLink] = useState("");
