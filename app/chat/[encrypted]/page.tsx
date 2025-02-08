@@ -21,13 +21,13 @@ export default function RoomPage() {
     setRoomId(decrypted.roomId);
   }, [decrypted.roomId])
 
-  if (! decrypted.nickname) {
+  if (decrypted.nickname) {
+    return (
+      <ChatContextProvider>
+        <ChatRoom/>
+      </ChatContextProvider>
+    );
+  } else {
     return <Lobby roomId={roomId} />;
   }
-
-  return (
-    <ChatContextProvider>
-      <ChatRoom/>
-    </ChatContextProvider>
-  );
 }

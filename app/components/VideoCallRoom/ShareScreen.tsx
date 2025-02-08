@@ -8,7 +8,6 @@ const ShareScreen = forwardRef(({isSharingScreen}: {isSharingScreen: boolean}, r
 
     useImperativeHandle(ref, () => ({
         playVideo: (videoTrack: ICameraVideoTrack) => {
-            console.log('play video')
             videoTrack?.play(sharingScreenRef.current);
         }
     }))

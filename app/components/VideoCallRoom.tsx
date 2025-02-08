@@ -13,13 +13,14 @@ import VideoController from "@components/Common/VideoController";
 import {IAgoraRTCRemoteUser, IAgoraRTCClient} from '../types';
 import GLOBAL_CONFIG from '@utils/globals'
 import { ConnectionState, Mode } from '@enums/index'
+import config from '@/configs'
 
 AgoraRTC.setLogLevel(2); // close all of the logs
 
 const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
 
 export default function VideoCallRoom() {
-    const APP_ID = process.env.NEXT_PUBLIC_AGORA_APP_ID!; // 替換為你的 Agora App ID
+    const APP_ID = config.publicAgoraAppId; // 替換為你的 Agora App ID
 
     const chatCtx = useContext(ChatContext);
     const CHANNEL_NAME = chatCtx.roomId; 
@@ -231,7 +232,6 @@ export default function VideoCallRoom() {
                 </div>
             </Sidebar>
 
-            {/* 右側：視訊畫面 */}
             <div className="pl-20 w-full h-screen bg-gray-100 flex flex-col">
                 <ShareScreen ref={sharingScreenRef} isSharingScreen={isSharingScreen} />
                 <UserVideoArea ref={selfScreenRef} remoteUsers={remoteUsers} isSharingScreen={isSharingScreen} />

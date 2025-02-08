@@ -8,11 +8,12 @@ import 'react-toastify/dist/ReactToastify.css';
 import { ConnectionState, Mode } from '@/enums'
 import Button from '@components/Common/Button';
 import VideoController from '@components/Common/VideoController'
+import config from '@/configs'
 
 AgoraRTC.setLogLevel(2); // close all of the logs
 
 const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
-const APP_ID = process.env.NEXT_PUBLIC_AGORA_APP_ID!;
+const APP_ID = config.publicAgoraAppId;
 
 export default function VideoCallRoom() {
     const chatCtx = useContext(ChatContext);
